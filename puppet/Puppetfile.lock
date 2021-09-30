@@ -1,0 +1,54 @@
+FORGE
+  remote: https://forgeapi.puppetlabs.com
+  specs:
+    KyleAnderson-consul (5.1.0)
+      camptocamp-systemd (>= 1.1.1, < 3.0.0)
+      puppet-archive (>= 2.0.0, < 4.0.0)
+      puppetlabs-powershell (>= 2.1.3, < 3.0.0)
+      puppetlabs-stdlib (>= 4.13.1, < 6.0.0)
+    camptocamp-systemd (2.12.0)
+      puppetlabs-inifile (>= 1.6.0, < 5.0.0)
+      puppetlabs-stdlib (>= 4.13.1, < 7.0.0)
+    jsok-vault (2.3.0)
+      camptocamp-systemd (>= 1.1.1, < 3.0.0)
+      puppet-archive (>= 2.0.0, < 5.0.0)
+      puppetlabs-stdlib (>= 4.24.0, < 7.0.0)
+      stm-file_capability (>= 1.0.1, < 5.0.0)
+    puppet-archive (3.2.1)
+      puppetlabs-stdlib (>= 4.13.1, < 6.0.0)
+    puppet-staging (3.2.0)
+    puppetlabs-apt (8.1.0)
+      puppetlabs-stdlib (>= 4.16.0, < 8.0.0)
+    puppetlabs-concat (4.2.1)
+      puppetlabs-stdlib (>= 4.13.1, < 5.0.0)
+    puppetlabs-inifile (4.4.0)
+      puppetlabs-stdlib (>= 4.13.0, < 7.0.0)
+      puppetlabs-translate (>= 1.0.0, < 3.0.0)
+    puppetlabs-powershell (2.3.0)
+    puppetlabs-stdlib (4.25.1)
+    puppetlabs-translate (2.2.0)
+    stm-file_capability (3.0.0)
+
+GIT
+  remote: git://github.com/yaosiang/puppet-consul_template.git
+  ref: master
+  sha: 421241e26179f7608c9782363a0f901eed67ff8d
+  specs:
+    claranet-consul_template (2.1.1)
+      puppet-staging (>= 3.0.0, <= 4.0.0)
+      puppetlabs-concat (>= 2.2.0, < 5.0.0)
+      puppetlabs-stdlib (>= 4.13.1, < 6.0.0)
+
+PATH
+  remote: ./profile
+  specs:
+    104corp-profile (0.0.1)
+
+DEPENDENCIES
+  104corp-profile (>= 0)
+  KyleAnderson-consul (= 5.1.0)
+  claranet-consul_template (>= 0)
+  jsok-vault (= 2.3.0)
+  puppetlabs-apt (= 8.1.0)
+  puppetlabs-stdlib (= 4.25.1)
+

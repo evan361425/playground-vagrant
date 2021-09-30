@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+#^syntax detection
+
+forge "https://forgeapi.puppetlabs.com"
+
+mod 'puppetlabs-stdlib', '4.25.1'
+mod 'puppetlabs-apt', '8.1.0'
+
+## Vault: https://github.com/jsok/puppet-vault
+mod 'jsok-vault', '2.3.0'
+## Consul: https://github.com/solarkennedy/puppet-consul
+mod 'KyleAnderson/consul', '5.1.0'
+## consul-template: https://github.com/claranet/puppet-consul_template
+mod 'claranet-consul_template',
+  :git => 'git://github.com/yaosiang/puppet-consul_template.git'
+
+mod '104corp/profile', :path => './profile'
