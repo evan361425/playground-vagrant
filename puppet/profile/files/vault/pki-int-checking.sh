@@ -49,9 +49,13 @@ generateCSR() {
 shouldResignRootCert() {
   # This is an unauthenticated endpoint.
   $CURL_BIN -s $PKI_ROOT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/CA_CHAIN.pem
-  openssl x509 -in /etc/vault.d/CA_CHAIN.pem &> /dev/null || exit 1
+
+  # If unparsable, exit
+  openssl x509 -in /etc/vault.d/CA_CHAIN.pem > /dev/null 2>&1 &
+  [ $? -ne 0 ] || return 1;
 
   $RESULT = $(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer)
+  # If already set up root
   if [ "$RESULT" = "CA Root" ]; then
     return 1;
   fi
@@ -60,6 +64,10 @@ shouldResignRootCert() {
 }
 
 signCSRByRoot() {
+  if [ ! -f "$PKI_ROOT_TOKEN_FILE" ]; then
+    return 1;
+  fi
+
   PKI_ROOT_TOKEN=$($CAT_BIN $PKI_ROOT_TOKEN_FILE)
   TOKEN_NAME=$($CURL_BIN -s -X GET $PKI_ROOT_API_ADDR/v1/auth/token/lookup-self \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
@@ -127,7 +135,7 @@ NEW_TOKEN=$(. /etc/vault.d/token-checking.sh) || exit 1;
 if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   printStatus "Renew token successfully"
 
-  shouldResignRootCert || signCSRByRoot || setSignedCert
+  shouldResignRootCert && signCSRByRoot && setSignedCert
 
   exit 0;
 fi
@@ -150,7 +158,7 @@ if [ "${PKI_RESULT}" = "null" ]; then
   generateCSR
   generatePKIRole
 
-  signCSRByRoot || setSignedCert
+  signCSRByRoot && setSignedCert
 else
   printStatus "PKI enabled"
 fi
