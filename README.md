@@ -2,16 +2,19 @@
 
 The playground for vagrant
 
-<!-- TOC -->
+**TOC**
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Start vm](#start-vm)
-- [Install vagrant plugin](#install-vagrant-plugin)
+- [Puppet](#puppet)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Start vm](#start-vm)
+  - [Install vagrant plugin](#install-vagrant-plugin)
+  - [Initialize vault](#initialize-vault)
+- [Docker](#docker)
 
-<!-- /TOC -->
+## Puppet
 
-## Prerequisites
+### Prerequisites
 
 - virtualbox
 - vagrant
@@ -19,7 +22,7 @@ The playground for vagrant
 - librarian-puppet
 - make
 
-## Installation
+### Installation
 
 - Puppet-agent
 
@@ -34,7 +37,7 @@ $ cd puppet
 $ librarian-puppet install
 ```
 
-## Start vm
+### Start vm
 
 - Start and login to vm
 
@@ -43,8 +46,19 @@ $ vagrant up
 $ vagrant ssh
 ```
 
-## Install vagrant plugin
+### Install vagrant plugin
 
 ```bash
 $ vagrant plugin install vagrant-hostmanager vagrant-hosts vagrant-timezone vagrant-vbguest
 ```
+
+### Initialize vault
+
+```bash
+$ export VAULT_ADDR=http://localhost:8200
+$ vault operator init -recovery-shares=1 -recovery-threshold=1
+```
+
+## Docker
+
+See details in [docker-engine](docker-engine/README.md)
