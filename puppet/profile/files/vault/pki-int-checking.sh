@@ -44,6 +44,8 @@ generateCSR() {
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
     | $JQ_BIN -r '.data.csr' > /etc/vault.d/INTERMEDIATE_CSR.pem
+
+  return 0;
 }
 
 shouldResignRootCert() {
@@ -91,7 +93,7 @@ signCSRByRoot() {
   fi 
 
   printStatus "Generate certificate from root PKI successfully"
-  echo $CERT > /etc/vault.d/INTERMEDIATE_CERT.pem
+  printf "$CERT" > /etc/vault.d/INTERMEDIATE_CERT.pem
   return 0
 }
 
@@ -137,7 +139,7 @@ NEW_TOKEN=$(. /etc/vault.d/token-checking.sh) || exit 1;
 if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   printStatus "Renew token successfully"
 
-  shouldResignRootCert && signCSRByRoot && setSignedCert
+  shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
 
   exit 0;
 fi
@@ -157,10 +159,9 @@ if [ "${PKI_RESULT}" = "null" ]; then
   printStatus "Enable PKI"
   mountPKI
 
-  generateCSR
   generatePKIRole
 
-  signCSRByRoot && setSignedCert
+  generateCSR && signCSRByRoot && setSignedCert
 else
   printStatus "PKI enabled"
 fi
@@ -168,7 +169,7 @@ fi
 # ============================= Generate Artifact ==============================
 # generate client policy
 POLICY='encrypt-service'
-if [ $(checkPolicy $POLICY) = "null" ]; then
+if [ "$(checkPolicy $POLICY)" = "null" ]; then
   generatePolicy $POLICY $ENCRYPT_SERVICE_POLICY
 fi
 
