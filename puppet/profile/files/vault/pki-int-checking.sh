@@ -78,7 +78,7 @@ signCSRByRoot() {
   fi
 
   DATA=$($JQ_BIN -n \
-    --arg csr "$(cat INTERMEDIATE_CSR.pem)" \
+    --arg csr "$($CAT_BIN INTERMEDIATE_CSR.pem)" \
     '{"csr": $csr,"use_csr_values":true}')
 
   CERT=$($CURL_BIN -s -X POST $PKI_ROOT_API_ADDR/v1/pki/root/sign-intermediate \
@@ -96,7 +96,7 @@ signCSRByRoot() {
 
 setSignedCert() {
   DATA=$($JQ_BIN -n \
-    --arg certificate "$(cat INTERMEDIATE_CERT.pem)" \
+    --arg certificate "$($CAT_BIN INTERMEDIATE_CERT.pem)" \
     '{"certificate": $certificate}')
 
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/set-signed \
