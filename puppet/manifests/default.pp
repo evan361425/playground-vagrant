@@ -151,9 +151,13 @@ node 'vault-pki-int.example.com' {
         'auth/token/renew-self'             => {
           'capabilities' => ['create', 'update']
         },
+        'pki/intermediate/set-signed'       => {
+          'capabilities' => ['create', 'update']
+        },
       }
     },
     pki_root_api_addr                => 'http://vault-pki-root.example.com:8200',
-    pki_root_token_file              => '/etc/vault.d/ROOT_TOKEN'
+    pki_root_token_file              => '/etc/vault.d/ROOT_TOKEN',
+    pki_root_cn                      => 'Vault Root CA'
   }
 }
