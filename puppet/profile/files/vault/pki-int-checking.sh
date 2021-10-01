@@ -6,6 +6,7 @@
 # - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
 # - PKI_ROOT_API_ADDR       - needed when renew certificate
 # - PKI_ROOT_TOKEN_FILE     - needed when renew certificate
+# - PKI_ROOT_CN             - Common name of PKI root
 . /etc/vault.d/.cron.env
 
 # Needed files when initializing
@@ -60,7 +61,7 @@ shouldResignRootCert() {
 
   RESULT=$(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer -noout)
   # If already set up root
-  if [ "$RESULT" = "issuer= /CN=Vault Root CA" ]; then
+  if [ "$RESULT" = "issuer= /CN=$PKI_ROOT_CN" ]; then
     return 1;
   fi
 
