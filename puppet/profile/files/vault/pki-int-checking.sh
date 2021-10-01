@@ -117,6 +117,12 @@ generatePKIRole() {
     -d "@$PKI_ENCRYPT_SERVICE"
 }
 
+generateTokenRole() {
+  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/roles/encrypt-service \
+    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
+    -d '{"allowed_policies":["encrypt-service"]}'
+}
+
 checkPolicy() {
   echo $($CURL_BIN -s -X GET "$VAULT_API_ADDR/v1/sys/policy/$1" \
     -H $VAULT_TOKEN_HEADER -H $CONTENT_TYPE_HEADER \
@@ -163,6 +169,7 @@ if [ "${PKI_RESULT}" = "null" ]; then
   mountPKI
 
   generatePKIRole
+  generateTokenRole
 
   generateCSR && signCSRByRoot && setSignedCert
 else
