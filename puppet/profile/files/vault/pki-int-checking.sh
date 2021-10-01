@@ -50,15 +50,17 @@ generateCSR() {
 
 shouldResignRootCert() {
   # This is an unauthenticated endpoint.
-  $CURL_BIN -s $PKI_ROOT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/CA_CHAIN.pem
+  $CURL_BIN -s $VAULT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/CA_CHAIN.pem
 
   # If unparsable, exit
   openssl x509 -in /etc/vault.d/CA_CHAIN.pem > /dev/null 2>&1 &
-  [ $? -ne 0 ] || return 0;
+  if [ "$?" -ne "0" ]; then
+   return 0;
+  fi
 
-  $RESULT = $(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer)
+  RESULT=$(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer -noout)
   # If already set up root
-  if [ "$RESULT" = "CA Root" ]; then
+  if [ "$RESULT" = "issuer= /CN=Vault Root CA" ]; then
     return 1;
   fi
 
