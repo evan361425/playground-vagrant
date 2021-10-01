@@ -180,7 +180,7 @@ fi
 printStatus "Generate service checking token"
 SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  -d '{"display_name":"service-checking","ttl":"15m","policies":["default","encrypt-service-generator"]}' \
+  -d '{"display_name":"service-checking","ttl":"1h","policies":["default","encrypt-service-generator"]}' \
   | ${JQ_BIN} -r '.auth.client_token')
 
 echo "\nVAULT_TOKEN=$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
