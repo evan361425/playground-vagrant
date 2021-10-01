@@ -111,12 +111,16 @@ setSignedCert() {
   printStatus "Finish set intermediate PKI signed"
 }
 
+# Issue certificate by
+# curl -X POST localhost:8200/v1/pki/issue/encrypt-service -H "X-Vault-Token: " -d '{"common_name": "example.encrypt-service.com"}'
 generatePKIRole() {
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/roles/encrypt-service \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_ENCRYPT_SERVICE"
 }
 
+# Generate token by
+# curl -X POST localhost:8200/v1/auth/token/create/encrypt-service -H "X-Vault-Token: "
 generateTokenRole() {
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/roles/encrypt-service \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
