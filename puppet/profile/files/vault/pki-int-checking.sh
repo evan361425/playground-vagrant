@@ -52,7 +52,7 @@ shouldResignRootCert() {
 
   # If unparsable, exit
   openssl x509 -in /etc/vault.d/CA_CHAIN.pem > /dev/null 2>&1 &
-  [ $? -ne 0 ] || return 1;
+  [ $? -ne 0 ] || return 0;
 
   $RESULT = $(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer)
   # If already set up root
