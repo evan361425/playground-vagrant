@@ -35,4 +35,9 @@ Vagrant.configure("2") do |config|
         interm.vm.hostname = "vault-pki-int.example.com"
         interm.vm.network "private_network", ip: "192.168.1.12"
     end
+
+    config.vm.define "vault-kv" do |kv|
+        kv.vm.hostname = "vault-kv.example.com"
+        kv.vm.network "private_network", ip: "192.168.1.13"
+    end
 end

@@ -2,7 +2,6 @@
 class profile::vault (
   Boolean                    $enable_ui,
   Variant[Hash, Array[Hash]] $listener,
-  Hash                       $extra_config,
   # encrypted
   Hash                       $seal,
   Hash                       $storage,
@@ -12,6 +11,8 @@ class profile::vault (
   String                     $hashicorp_apt_key_server,
   String                     $http_proxy,
   String                     $https_proxy,
+  # Optional
+  Optional[Hash]             $extra_config = {},
 ) {
 
   apt::key { 'vault-gpg-key-with-proxy':

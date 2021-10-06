@@ -161,3 +161,65 @@ node 'vault-pki-int.example.com' {
     pki_root_cn                      => 'Vault Root CA'
   }
 }
+
+node 'vault-kv.example.com' {
+  include apt
+  class { 'profile::vault':
+    enable_ui                => true,
+    http_proxy               => '',
+    https_proxy              => '',
+    api_addr                 => $api_addr,
+    hashicorp_apt_key_id     => $hashicorp_apt_key_id,
+    hashicorp_apt_key_server => $hashicorp_apt_key_server,
+    seal                     => {
+      awskms             => {
+        region     => $aws_region,
+        kms_key_id => lookup('kms_key_id'),
+        access_key => lookup('access_key'),
+        secret_key => lookup('secret_key'),
+      }
+    },
+    storage                  => {
+      dynamodb           => {
+        ha_enabled => true,
+        region     => $aws_region,
+        table      => 'evan-vault-kv',
+        access_key => lookup('access_key'),
+        secret_key => lookup('secret_key'),
+      }
+    },
+    listener                 => {
+      tcp                => {
+        address     => '0.0.0.0:8200',
+        tls_disable => 1
+      }
+    },
+    extra_config             => {}
+  }
+
+  class { 'profile::vault_kv':
+    mount_setting                  => {
+      type    => 'kv',
+      options => {
+        version => '2'
+      }
+    },
+    secret_client_policy           => {
+      path => {
+        'develop/*'             => {
+          'capabilities' => ['read']
+        }
+      }
+    },
+    secret_client_generator_policy => {
+      path => {
+        'auth/token/create/secret-client' => {
+          'capabilities' => ['create', 'update']
+        },
+        'auth/token/renew-self'           => {
+          'capabilities' => ['create', 'update']
+        },
+      }
+    }
+  }
+}
