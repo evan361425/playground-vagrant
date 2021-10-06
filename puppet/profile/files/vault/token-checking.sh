@@ -28,10 +28,12 @@ TOKEN_NAME=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/auth/token/lookup-self \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   | $JQ_BIN -r '.data.display_name')
 if [ "$TOKEN_NAME" = "token-service-checking" ]; then
-  printStatus "Using wanted token, start renew token"
+  >&2 echo -n "$(date +"%F %T") - Using wanted token, start renew token..."
 
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/renew-self \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER"
+
+  >&2 echo " done"
   exit 0;
 elif [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"

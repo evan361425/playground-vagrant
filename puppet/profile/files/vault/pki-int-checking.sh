@@ -13,6 +13,10 @@
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
 PKI_SETTING="/etc/vault.d/pki-setting.json"
 
+# Files generate from script
+PEM_CSR="/etc/vault.d/INTERMEDIATE_CSR.pem"
+PEM_CERT="/etc/vault.d/INTERMEDIATE_CERT.pem"
+
 # Using Token (policy bind with "C") to generate Client (policy bind with "B")
 # Client is able to issue itself by PKI which already setup by "A"
 # https://github.com/104corp/vault/issues/10
@@ -44,27 +48,40 @@ generateCSR() {
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
-    | $JQ_BIN -r '.data.csr' > /etc/vault.d/INTERMEDIATE_CSR.pem
+    | $JQ_BIN -r '.data.csr' > $PEM_CSR
+
+  printStatus "CSR generated"
 
   return 0;
 }
 
 shouldResignRootCert() {
-  # This is an unauthenticated endpoint.
-  $CURL_BIN -s $VAULT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/CA_CHAIN.pem
-
-  # If unparsable, exit
-  openssl x509 -in /etc/vault.d/CA_CHAIN.pem > /dev/null 2>&1 &
-  if [ "$?" -ne "0" ]; then
-   return 0;
+  # If certificate file is empty or not found, renew cert
+  if [ ! -f "$PEM_CERT" ] || [ ! -s "$PEM_CERT" ]; then
+    printStatus "Certificate not found"
+    return 0;
   fi
 
-  RESULT=$(openssl x509 -in /etc/vault.d/CA_CHAIN.pem -issuer -noout)
+  # This is an unauthenticated endpoint.
+  $CURL_BIN -s $VAULT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/temp
+
+  # If unparsable, exit
+  openssl x509 -in /etc/vault.d/temp > /dev/null 2>&1 &
+  if [ "$?" -ne "0" ]; then
+    printStatus "Certificate non-parsable"
+    rm /etc/vault.d/temp
+    return 0;
+  fi
+
+  RESULT=$(openssl x509 -in /etc/vault.d/temp -issuer -noout)
+  rm /etc/vault.d/temp
+
   # If already set up root
   if [ "$RESULT" = "issuer= /CN=$PKI_ROOT_CN" ]; then
     return 1;
   fi
 
+  printStatus "Certificate is not issue by $PKI_ROOT_CN"
   return 0;
 }
 
@@ -83,26 +100,27 @@ signCSRByRoot() {
   fi
 
   DATA=$($JQ_BIN -n \
-    --arg csr "$($CAT_BIN /etc/vault.d/INTERMEDIATE_CSR.pem)" \
+    --arg csr "$($CAT_BIN $PEM_CSR)" \
     '{"csr": $csr,"use_csr_values":true}')
 
-  CERT=$($CURL_BIN -s -X POST $PKI_ROOT_API_ADDR/v1/pki/root/sign-intermediate \
+  $CURL_BIN -s -X POST $PKI_ROOT_API_ADDR/v1/pki/root/sign-intermediate \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
     -d "$DATA" \
-    | $JQ_BIN -r '.data.certificate')
+    | $JQ_BIN -r '.data.certificate' > $PEM_CERT
+
+  CERT=$($CAT_BIN $PEM_CERT)
   if [ "$CERT" = "null" ] || [ -z "$CERT" ]; then
     printStatus "Token cannot generate certificate"
     return 1;
   fi 
 
   printStatus "Generate certificate from root PKI successfully"
-  printf "$CERT" > /etc/vault.d/INTERMEDIATE_CERT.pem
   return 0
 }
 
 setSignedCert() {
   DATA=$($JQ_BIN -n \
-    --arg certificate "$($CAT_BIN /etc/vault.d/INTERMEDIATE_CERT.pem)" \
+    --arg certificate "$($CAT_BIN $PEM_CERT)" \
     '{"certificate": $certificate}')
 
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/set-signed \
@@ -150,8 +168,6 @@ fi
 
 NEW_TOKEN=$(. /etc/vault.d/token-checking.sh) || exit 1;
 if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
-  printStatus "Renew token successfully"
-
   shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
 
   exit 0;

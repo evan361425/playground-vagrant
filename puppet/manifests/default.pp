@@ -145,13 +145,16 @@ node 'vault-pki-int.example.com' {
     },
     encrypt_service_generator_policy => {
       path                                  => {
-        'auth/token/create/encrypt-service' => {
+        'auth/token/create/encrypt-service'  => {
           'capabilities' => ['create', 'update']
         },
-        'auth/token/renew-self'             => {
+        'auth/token/renew-self'              => {
           'capabilities' => ['create', 'update']
         },
-        'pki/intermediate/set-signed'       => {
+        'pki/intermediate/set-signed'        => {
+          'capabilities' => ['create', 'update']
+        },
+        'pki/intermediate/generate/internal' => {
           'capabilities' => ['create', 'update']
         },
       }
@@ -198,6 +201,7 @@ node 'vault-kv.example.com' {
   }
 
   class { 'profile::vault_kv':
+    recovery_keys                  => lookup('vault_kv_recovery_keys'),
     mount_setting                  => {
       type    => 'kv',
       options => {
