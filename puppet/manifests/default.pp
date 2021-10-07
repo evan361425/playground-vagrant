@@ -160,13 +160,13 @@ node 'vault-pki-int.example.com' {
       }
     },
     pki_root_api_addr                => 'http://vault-pki-root.example.com:8200',
-    pki_root_token_file              => '/etc/vault.d/ROOT_TOKEN',
-    pki_root_cn                      => 'Vault Root CA'
+    pki_root_token_file              => '/etc/vault.d/ROOT_TOKEN'
   }
 }
 
 node 'vault-kv.example.com' {
   include apt
+
   class { 'profile::vault':
     enable_ui                => true,
     http_proxy               => '',
@@ -198,6 +198,17 @@ node 'vault-kv.example.com' {
       }
     },
     extra_config             => {}
+  }
+
+  class { 'profile::vault_cert_generator' :
+    cert_puppet_source_ctmpl => 'puppet:///modules/profile/consul_template/kv-cert.ctmpl',
+    key_puppet_source_ctmpl  => 'puppet:///modules/profile/consul_template/kv-key.ctmpl',
+    cert_source_ctmpl        => 'cert.ctmpl',
+    cert_destination         => 'cert.pem',
+    key_source_ctmpl         => 'key.ctmpl',
+    key_destination          => 'key.pem',
+    vault_address            => 'http://vault-pki-int.example.com:8200',
+    vault_token              => lookup('vault_pki_int_token')
   }
 
   class { 'profile::vault_kv':

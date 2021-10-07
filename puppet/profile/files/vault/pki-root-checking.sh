@@ -74,8 +74,6 @@ if [ "${PKI_RESULT}" = "null" ]; then
   mountPKI
 
   generateCert
-else
-  printStatus "PKI enabled"
 fi
 
 # ============================= Generate Artifact ==============================

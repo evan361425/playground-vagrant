@@ -6,7 +6,6 @@ class profile::vault_pki_int (
   Hash             $encrypt_service_policy,
   Hash             $encrypt_service_generator_policy,
   String           $pki_root_api_addr,
-  String           $pki_root_cn,
   # optional
   Optional[String] $pki_root_token_file = '',
   Optional[String] $recovery_keys = '',
@@ -21,7 +20,7 @@ class profile::vault_pki_int (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}\nVAULT_API_ADDR=${api_addr}\nPKI_ROOT_API_ADDR=${$pki_root_api_addr}\nPKI_ROOT_TOKEN_FILE=${$pki_root_token_file}\nPKI_ROOT_CN=\"${$pki_root_cn}\""),
+    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}\nVAULT_API_ADDR=${api_addr}\nPKI_ROOT_API_ADDR=${$pki_root_api_addr}\nPKI_ROOT_TOKEN_FILE=${$pki_root_token_file}\n"),
     require => Package['vault'],
   }
 
@@ -62,22 +61,6 @@ class profile::vault_pki_int (
     owner   => 'vault',
     group   => 'vault',
     content => to_json($encrypt_service_generator_policy),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/INTERMEDIATE_CSR.pem':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => inline_template(''),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/INTERMEDIATE_CERT.pem':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => inline_template(''),
     require => Package['vault'],
   }
 

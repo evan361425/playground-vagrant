@@ -83,7 +83,7 @@ class profile::vault_kv (
     require => Package['vault'],
   }
 
-  cron { 'pki-checking':
+  cron { 'vault-checking':
     provider => 'crontab',
     command  => '/etc/vault.d/kv-checking.sh >> /etc/vault.d/process.log 2>&1',
     user     => 'vault',

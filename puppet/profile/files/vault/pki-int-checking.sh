@@ -6,7 +6,6 @@
 # - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
 # - PKI_ROOT_API_ADDR       - needed when renew certificate
 # - PKI_ROOT_TOKEN_FILE     - needed when renew certificate
-# - PKI_ROOT_CN             - Common name of PKI root
 . /etc/vault.d/.cron.env
 
 # Needed files when initializing
@@ -62,27 +61,20 @@ shouldResignRootCert() {
     return 0;
   fi
 
-  # This is an unauthenticated endpoint.
-  $CURL_BIN -s $VAULT_API_ADDR/v1/pki/ca_chain > /etc/vault.d/temp
-
   # If unparsable, exit
-  openssl x509 -in /etc/vault.d/temp > /dev/null 2>&1 &
+  openssl x509 -in $PEM_CERT > /dev/null 2>&1 &
   if [ "$?" -ne "0" ]; then
     printStatus "Certificate non-parsable"
-    rm /etc/vault.d/temp
     return 0;
   fi
 
-  RESULT=$(openssl x509 -in /etc/vault.d/temp -issuer -noout)
-  rm /etc/vault.d/temp
-
-  # If already set up root
-  if [ "$RESULT" = "issuer= /CN=$PKI_ROOT_CN" ]; then
+  # If not expired in next 60 seconds
+  if openssl x509 -in $PEM_CERT -noout -checkend 60; then
     return 1;
+  else
+    printStatus "Certificate is going to expired, start renew"
+    return 0;
   fi
-
-  printStatus "Certificate is not issue by $PKI_ROOT_CN"
-  return 0;
 }
 
 signCSRByRoot() {
@@ -138,11 +130,11 @@ generatePKIRole() {
 }
 
 # Generate token by
-# curl -X POST localhost:8200/v1/auth/token/create/encrypt-service -H "X-Vault-Token: "
+# curl -X POST localhost:8200/v1/auth/token/create/encrypt-service -H "X-Vault-Token: " -d '{"ttl":"15m"}'
 generateTokenRole() {
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/roles/encrypt-service \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d '{"allowed_policies":["encrypt-service"]}'
+    -d '{"allowed_policies":["encrypt-service"],"token_ttl":"15m"}'
 }
 
 checkPolicy() {
@@ -192,8 +184,6 @@ if [ "${PKI_RESULT}" = "null" ]; then
   generateTokenRole
 
   generateCSR && signCSRByRoot && setSignedCert
-else
-  printStatus "PKI enabled"
 fi
 
 # ============================= Generate Artifact ==============================
