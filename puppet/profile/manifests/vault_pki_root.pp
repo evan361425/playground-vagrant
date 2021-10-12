@@ -57,12 +57,11 @@ class profile::vault_pki_root (
     ],
   }
 
-  file { 'log-file':
+  file { '/var/log/vault/pki-checking.log':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
-    source  => '/var/log/vault/pki-checking.log',
     require => Package['vault'],
   }
 
@@ -74,7 +73,7 @@ class profile::vault_pki_root (
     require  => [
       File['/etc/vault.d/.cron.env'],
       File['pki-checking-scipt'],
-      File['log-file'],
+      File['/var/log/vault/pki-checking.log'],
     ],
   }
 }

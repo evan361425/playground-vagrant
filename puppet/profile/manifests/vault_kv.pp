@@ -57,24 +57,23 @@ class profile::vault_kv (
     ],
   }
 
-  file { 'log-file':
+  file { '/var/log/vault/kv-checking.log':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
-    source  => '/var/log/vault/kv-checking.log',
     require => Package['vault'],
   }
 
   cron { 'vault-checking':
     provider => 'crontab',
-    command  => '/etc/vault.d/kv-checking.sh >> /etc/vault.d/process.log 2>&1',
+    command  => '/etc/vault.d/kv-checking.sh >> /var/log/vault/kv-checking.log 2>&1',
     user     => 'vault',
     minute   => '*/15',
     require  => [
       File['/etc/vault.d/.cron.env'],
       File['kv-checking-scipt'],
-      File['log-file'],
+      File['/var/log/vault/kv-checking.log'],
     ],
   }
 }

@@ -10,7 +10,7 @@ class profile::vault_cert_generator (
   String $vault_token,
   # Optional
   Optional[String] $source_folder = '/etc/vault.d/tls',
-  Optional[String] $log_file = '/etc/consul-template/process.log',
+  Optional[String] $log_file = '/var/log/vault/cert-generator.log',
   Optional[String] $version = '0.27.0',
   Optional[String] $https_proxy = '',
   Optional[String] $http_proxy = '',
