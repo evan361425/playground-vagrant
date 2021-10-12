@@ -158,7 +158,7 @@ if [ -f "$PKI_ROOT_TOKEN_FILE" ]; then
   printStatus "The file $PKI_ROOT_TOKEN_FILE exist, please remove it as soon as possible"
 fi
 
-NEW_TOKEN=$(. /etc/vault.d/token-checking.sh) || exit 1;
+NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
 if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
 

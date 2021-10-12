@@ -71,4 +71,28 @@ class profile::vault (
     notify  => Service['vault'],
   }
 
+  file { 'renew-token-scipt':
+    ensure => present,
+    owner  => 'vault',
+    group  => 'vault',
+    mode   => '0755',
+    source => 'puppet:///modules/profile/vault/renew-token.sh',
+    path   => '/etc/vault.d/renew-token.sh',
+  }
+
+  file { 'generate-root-token-scipt':
+    ensure => present,
+    owner  => 'vault',
+    group  => 'vault',
+    mode   => '0755',
+    source => 'puppet:///modules/profile/vault/generate-root-token.sh',
+    path   => '/etc/vault.d/generate-root-token.sh',
+  }
+
+  file { '/var/log/vault':
+    ensure  => directory,
+    owner   => 'vault',
+    group   => 'vault',
+    require => Package['vault'],
+  }
 }

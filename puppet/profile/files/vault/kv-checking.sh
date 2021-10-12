@@ -52,7 +52,7 @@ generatePolicy() {
 }
 
 # ============================ Check and prepare env ===========================
-NEW_TOKEN=$(. /etc/vault.d/token-checking.sh) || exit 1;
+NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
 if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   exit 0;
 fi

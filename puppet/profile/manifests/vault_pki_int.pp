@@ -77,52 +77,24 @@ class profile::vault_pki_int (
     ],
   }
 
-  file { 'token-checking-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/token-checking.sh',
-    path   => '/etc/vault.d/token-checking.sh',
-  }
-
-  file { 'generate-root-token-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/generate-root-token.sh',
-    path   => '/etc/vault.d/generate-root-token.sh',
-  }
-
-  file { '/etc/vault.d/pki-checking.log':
+  file { 'log-file':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
+    source  =>'/var/log/vault/pki-checking.log',
     require => Package['vault'],
   }
 
   cron { 'pki-checking':
     provider => 'crontab',
-    command  => '/etc/vault.d/pki-int-checking.sh >> /etc/vault.d/pki-checking.log 2>&1',
+    command  => '/etc/vault.d/pki-int-checking.sh >> /var/log/pki-checking.log 2>&1',
     user     => 'vault',
     minute   => '*/15',
     require  => [
       File['/etc/vault.d/.cron.env'],
       File['pki-checking-scipt'],
-      File['/etc/vault.d/pki-checking.log'],
+      File['log-file'],
     ],
   }
-
-  # consul_template::watch { 'renew-token':
-  #   config_hash => {
-  #     perms       => '0644',
-  #     source      => '/etc/consul_template/token.ctmpl',
-  #     destination => '/etc/consul_template/haproxy.cfg',
-  #     backup      => true,
-  #     command     => 'systemctl reload haproxy',
-  #   },
-  #   require     => File['/etc/haproxy/haproxy.ctmpl'],
-  # }
 }

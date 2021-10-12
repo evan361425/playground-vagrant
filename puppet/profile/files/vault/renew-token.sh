@@ -37,7 +37,7 @@ if [ "$TOKEN_NAME" = "token-service-checking" ]; then
   exit 0;
 elif [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"
-  removeTokenInEnv()
-
-  exit 1;
 fi
+
+removeTokenInEnv()
+exit 1;

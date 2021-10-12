@@ -57,29 +57,12 @@ class profile::vault_kv (
     ],
   }
 
-  file { 'token-checking-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/token-checking.sh',
-    path   => '/etc/vault.d/token-checking.sh',
-  }
-
-  file { 'generate-root-token-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/generate-root-token.sh',
-    path   => '/etc/vault.d/generate-root-token.sh',
-  }
-
-  file { '/etc/vault.d/process.log':
+  file { 'log-file':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
+    source  => '/var/log/vault/kv-checking.log',
     require => Package['vault'],
   }
 
@@ -91,7 +74,7 @@ class profile::vault_kv (
     require  => [
       File['/etc/vault.d/.cron.env'],
       File['kv-checking-scipt'],
-      File['/etc/vault.d/process.log'],
+      File['log-file'],
     ],
   }
 }
