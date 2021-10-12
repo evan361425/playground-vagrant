@@ -67,7 +67,7 @@ class profile::vault_pki_root (
 
   cron { 'pki-checking':
     provider => 'crontab',
-    command  => '/etc/vault.d/pki-root-checking.sh >> /var/log/pki-checking.log 2>&1',
+    command  => '/etc/vault.d/pki-root-checking.sh >> /var/log/vault/pki-checking.log 2>&1',
     user     => 'vault',
     minute   => '*/15',
     require  => [

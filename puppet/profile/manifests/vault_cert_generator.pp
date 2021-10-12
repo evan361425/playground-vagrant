@@ -11,7 +11,7 @@ class profile::vault_cert_generator (
   # Optional
   Optional[String] $source_folder = '/etc/vault.d/tls',
   Optional[String] $log_file = '/var/log/vault/cert-generator.log',
-  Optional[String] $version = '0.27.0',
+  Optional[String] $consul_template_version = '0.27.0',
   Optional[String] $https_proxy = '',
   Optional[String] $http_proxy = '',
 ) {
@@ -27,9 +27,9 @@ class profile::vault_cert_generator (
 
   file { $cert_source_ctmpl :
     ensure  => present,
-    owner   => 'vault',
+    owner   => 'consul_template',
     group   => 'vault',
-    mode    => '0755',
+    mode    => '0644',
     source  => $cert_puppet_source_ctmpl,
     path    => "${source_folder}/${cert_source_ctmpl}",
     require => File[$source_folder]
@@ -37,9 +37,9 @@ class profile::vault_cert_generator (
 
   file { $key_source_ctmpl :
     ensure  => present,
-    owner   => 'vault',
+    owner   => 'consul_template',
     group   => 'vault',
-    mode    => '0755',
+    mode    => '0644',
     source  => $key_puppet_source_ctmpl,
     path    => "${source_folder}/${key_source_ctmpl}",
     require => File[$source_folder]
@@ -47,19 +47,19 @@ class profile::vault_cert_generator (
 
   file { $log_file :
     ensure => present,
-    owner  => 'vault',
+    owner  => 'consul_template',
     group  => 'vault',
-    mode   => '0755',
+    mode   => '0644',
   }
 
   class { 'consul_template':
     http_proxy    => $http_proxy,
     https_proxy   => $https_proxy,
-    version       => $version,
+    version       => $consul_template_version,
     config_dir    => '/etc/consul-template',
     pretty_config => true,
+    user          => 'consul_template',
     group         => 'vault',
-    user          => 'vault',
     config_hash   => {
       vault => {
         address     => $vault_address,
@@ -75,6 +75,8 @@ class profile::vault_cert_generator (
   }
 
   consul_template::watch { 'vault_cert':
+    user        => 'consul_template',
+    group       => 'vault',
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${cert_source_ctmpl}",
@@ -89,6 +91,8 @@ class profile::vault_cert_generator (
   }
 
   consul_template::watch { 'vault_key':
+    user        => 'consul_template',
+    group       => 'vault',
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${key_source_ctmpl}",
