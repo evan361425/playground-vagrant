@@ -12,10 +12,6 @@
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
 PKI_SETTING="/etc/vault.d/pki-setting.json"
 
-# Files generate from script
-PEM_CSR="/etc/vault.d/INTERMEDIATE_CSR.pem"
-PEM_CERT="/etc/vault.d/INTERMEDIATE_CERT.pem"
-
 # Using Token (policy bind with "C") to generate Client (policy bind with "B")
 # Client is able to issue itself by PKI which already setup by "A"
 # https://github.com/104corp/vault/issues/10
@@ -37,21 +33,17 @@ printStatus() {
   echo "$(date +"%F %T") - $1"
 }
 
-mountPKI() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+mountPKIIfNeed() {
+  PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "@$MOUNT_SETTING" > /dev/null
-}
+    | $JQ_BIN '.data."pki/"')
 
-generateCSR() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/generate/internal \
-    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "@$PKI_SETTING" \
-    | $JQ_BIN -r '.data.csr' > $PEM_CSR
-
-  printStatus "CSR generated"
-
-  return 0;
+  if [ "${PKI_RESULT}" = "null" ]; then
+    $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+      -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
+      -d "@$MOUNT_SETTING" > /dev/null
+    printStatus "Mount PKI successfully"
+  fi
 }
 
 shouldResignRootCert() {
@@ -62,7 +54,7 @@ shouldResignRootCert() {
   fi
 
   # If unparsable, exit
-  openssl x509 -in $PEM_CERT > /dev/null 2>&1 &
+  openssl x509 -in $PEM_CERT > /dev/null 2>&1
   if [ "$?" -ne "0" ]; then
     printStatus "Certificate non-parsable"
     return 0;
@@ -75,6 +67,17 @@ shouldResignRootCert() {
     printStatus "Certificate is going to expired, start renew"
     return 0;
   fi
+}
+
+generateCSR() {
+  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/generate/internal \
+    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
+    -d "@$PKI_SETTING" \
+    | $JQ_BIN -r '.data.csr' > $PEM_CSR
+
+  printStatus "CSR generated"
+
+  return 0;
 }
 
 signCSRByRoot() {
@@ -91,9 +94,11 @@ signCSRByRoot() {
     return 1;
   fi
 
+  TTL=$($JQ_BIN -r '.ttl // "1h"' $PKI_SETTING)
   DATA=$($JQ_BIN -n \
     --arg csr "$($CAT_BIN $PEM_CSR)" \
-    '{"csr": $csr,"use_csr_values":true}')
+    --arg ttl "$TTL" \
+    '{"csr": $csr,"use_csr_values":true,"ttl":$ttl}')
 
   $CURL_BIN -s -X POST $PKI_ROOT_API_ADDR/v1/pki/root/sign-intermediate \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
@@ -137,12 +142,6 @@ generateTokenRole() {
     -d '{"allowed_policies":["encrypt-service"],"token_ttl":"15m"}'
 }
 
-checkPolicy() {
-  echo $($CURL_BIN -s -X GET "$VAULT_API_ADDR/v1/sys/policy/$1" \
-    -H $VAULT_TOKEN_HEADER -H $CONTENT_TYPE_HEADER \
-    | $JQ_BIN -r '.name')
-}
-
 generatePolicy() {
   printStatus "Generate $1 policy"
   POLICY=$($CAT_BIN $2)
@@ -173,31 +172,14 @@ fi
 VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
 
 # ========================== Generate PKI Intermediate =========================
-PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
-  -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  | $JQ_BIN '.data."pki/"')
-if [ "${PKI_RESULT}" = "null" ]; then
-  printStatus "Enable PKI"
-  mountPKI
-
-  generatePKIRole
-  generateTokenRole
-
-  generateCSR && signCSRByRoot && setSignedCert
-fi
+mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
-# generate client policy
-POLICY='encrypt-service'
-if [ "$(checkPolicy $POLICY)" = "null" ]; then
-  generatePolicy $POLICY $ENCRYPT_SERVICE_POLICY
-fi
-
-# generate role policy
-POLICY='encrypt-service-generator'
-if [ "$(checkPolicy $POLICY)" = "null" ]; then
-  generatePolicy $POLICY $ENCRYPT_SERVICE_GENERATOR_POLICY
-fi
+generatePKIRole
+generateTokenRole
+generateCSR && signCSRByRoot && setSignedCert
+generatePolicy 'encrypt-service' $ENCRYPT_SERVICE_POLICY
+generatePolicy 'encrypt-service-generator' $ENCRYPT_SERVICE_GENERATOR_POLICY
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"

@@ -51,12 +51,12 @@ node 'vault-pki-root.example.com' {
     mount_setting           => {
       type   => 'pki',
       config => {
-        max_lease_ttl => '1h'
+        max_lease_ttl => '1d'
       }
     },
     pki_setting             => {
       common_name => 'Vault Root CA',
-      ttl         => '1h'
+      ttl         => '1d'
     },
     pki_intermediate_policy => {
       path                          => {
@@ -123,7 +123,7 @@ node 'vault-pki-int.example.com' {
     },
     pki_setting                      => {
       common_name => 'Vault Intermediate CA',
-      ttl         => '1h'
+      ttl         => '930s'
     },
     pki_encrypt_service              => {
       allowed_domains    => 'encrypt-service.com',

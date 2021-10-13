@@ -27,7 +27,7 @@ class profile::vault_cert_generator (
 
   file { $cert_source_ctmpl :
     ensure  => present,
-    owner   => 'consul_template',
+    owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
     source  => $cert_puppet_source_ctmpl,
@@ -37,7 +37,7 @@ class profile::vault_cert_generator (
 
   file { $key_source_ctmpl :
     ensure  => present,
-    owner   => 'consul_template',
+    owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
     source  => $key_puppet_source_ctmpl,
@@ -47,7 +47,7 @@ class profile::vault_cert_generator (
 
   file { $log_file :
     ensure => present,
-    owner  => 'consul_template',
+    owner  => 'vault',
     group  => 'vault',
     mode   => '0644',
   }
@@ -58,7 +58,7 @@ class profile::vault_cert_generator (
     version       => $consul_template_version,
     config_dir    => '/etc/consul-template',
     pretty_config => true,
-    user          => 'consul_template',
+    user          => 'vault',
     group         => 'vault',
     config_hash   => {
       vault => {
@@ -75,8 +75,6 @@ class profile::vault_cert_generator (
   }
 
   consul_template::watch { 'vault_cert':
-    user        => 'consul_template',
-    group       => 'vault',
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${cert_source_ctmpl}",
@@ -91,8 +89,6 @@ class profile::vault_cert_generator (
   }
 
   consul_template::watch { 'vault_key':
-    user        => 'consul_template',
-    group       => 'vault',
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${key_source_ctmpl}",

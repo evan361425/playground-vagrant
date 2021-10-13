@@ -23,23 +23,24 @@ printStatus() {
   echo "$(date +"%F %T") - $1"
 }
 
-mountPKI() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+mountPKIIfNeed() {
+  PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "@$MOUNT_SETTING" > /dev/null
+    | $JQ_BIN '.data."pki/"')
+  if [ "${PKI_RESULT}" = "null" ]; then
+    printStatus "Enable PKI"
+    $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+      -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
+      -d "@$MOUNT_SETTING" > /dev/null
+  fi
 }
 
 generateCert() {
+  printStatus "Generate certificate"
   $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/root/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
     | $JQ_BIN '.data' > /etc/vault.d/CERTIFICATE.pem
-}
-
-checkPolicy() {
-  echo $($CURL_BIN -s -X GET "$VAULT_API_ADDR/v1/sys/policy/$1" \
-    -H $VAULT_TOKEN_HEADER -H $CONTENT_TYPE_HEADER \
-    | $JQ_BIN -r '.name')
 }
 
 generatePolicy() {
@@ -66,22 +67,11 @@ fi
 VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
 
 # ============================== Generate PKI Root =============================
-PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
-  -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  | $JQ_BIN '.data."pki/"')
-if [ "${PKI_RESULT}" = "null" ]; then
-  printStatus "Enable PKI"
-  mountPKI
-
-  generateCert
-fi
+mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
-# generate intermediate policy
-POLICY='pki-intermediate'
-if [ $(checkPolicy $POLICY) = "null" ]; then
-  generatePolicy $POLICY $PKI_INTERMEDIATE_POLICY
-fi
+generateCert
+generatePolicy 'pki-intermediate' $PKI_INTERMEDIATE_POLICY
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"

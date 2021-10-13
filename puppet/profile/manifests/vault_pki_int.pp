@@ -9,6 +9,7 @@ class profile::vault_pki_int (
   # optional
   Optional[String] $pki_root_token_file = '',
   Optional[String] $recovery_keys = '',
+  Optional[String] $pki_cert_folder = '/etc/vault.d/certs',
   Optional[String] $api_addr = 'http://0.0.0.0:8200',
 ) {
 
@@ -20,7 +21,12 @@ class profile::vault_pki_int (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}\nVAULT_API_ADDR=${api_addr}\nPKI_ROOT_API_ADDR=${$pki_root_api_addr}\nPKI_ROOT_TOKEN_FILE=${$pki_root_token_file}\n"),
+    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
+VAULT_API_ADDR=${api_addr}
+PKI_ROOT_API_ADDR=${$pki_root_api_addr}
+PKI_ROOT_TOKEN_FILE=${$pki_root_token_file}
+PEM_CSR=${$pki_cert_folder}/INTERMEDIATE_CSR.pem
+PEM_CERT=${$pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],
   }
 
@@ -61,6 +67,13 @@ class profile::vault_pki_int (
     owner   => 'vault',
     group   => 'vault',
     content => to_json($encrypt_service_generator_policy),
+    require => Package['vault'],
+  }
+
+  file { $pki_cert_folder:
+    ensure  => directory,
+    owner   => 'vault',
+    group   => 'vault',
     require => Package['vault'],
   }
 
