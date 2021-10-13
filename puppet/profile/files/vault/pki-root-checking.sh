@@ -13,7 +13,6 @@ PKI_SETTING="/etc/vault.d/pki-setting.json"
 # Policies
 PKI_INTERMEDIATE_POLICY="/etc/vault.d/pki-intermediate-policy.json"
 
-CAT_BIN=$(command -v cat)
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
 
@@ -46,7 +45,7 @@ generateCert() {
 
 generatePolicy() {
   printStatus "Generate $1 policy"
-  POLICY=$($CAT_BIN "$2")
+  POLICY=$(cat "$2")
   DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \

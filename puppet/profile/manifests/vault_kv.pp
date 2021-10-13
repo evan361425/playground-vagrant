@@ -1,9 +1,12 @@
 # Building key/vaule secrets manager
 class profile::vault_kv (
   Hash             $mount_setting,
-  Hash             $secret_client_policy,
-  Hash             $secret_client_generator_policy,
-  # optional
+  Hash             $policy_setting,
+  Optional[String] $root_token = '',
+  Optional[String] $cron_name = 'kv-secrets',
+  Optional[String] $mount_file = '/etc/vault.d/mount-kv-setting.json',
+  Optional[String] $policy_file = '/etc/vault.d/kv-policy.json',
+  Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
   Optional[String] $recovery_keys = '',
   Optional[String] $api_addr = 'http://0.0.0.0:8200',
 ) {
@@ -12,15 +15,19 @@ class profile::vault_kv (
     ensure => installed,
   }
 
-  file { '/etc/vault.d/.cron.env':
-    ensure  => file,
+  file { "/etc/vault.d/${cron_name}.env":
+    ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}\nVAULT_API_ADDR=${api_addr}"),
+    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
+VAULT_ROOT_TOKEN=${root_token}
+VAULT_API_ADDR=${api_addr}
+MOUNT_FILE=${mount_file}
+POLICY_FILE=${policy_file}"),
     require => Package['vault'],
   }
 
-  file { '/etc/vault.d/mount-setting.json':
+  file { $mount_file:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -28,19 +35,11 @@ class profile::vault_kv (
     require => Package['vault'],
   }
 
-  file { '/etc/vault.d/secret-client-policy.json':
+  file { $policy_file:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => to_json($secret_client_policy),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/secret-client-generator-policy.json':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => to_json($secret_client_generator_policy),
+    content => to_json($policy_setting),
     require => Package['vault'],
   }
 
@@ -57,23 +56,26 @@ class profile::vault_kv (
     ],
   }
 
-  file { '/var/log/vault/kv-checking.log':
-    ensure  => file,
+  file { $log_file:
+    ensure  => present,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0644',
     require => Package['vault'],
   }
 
-  cron { 'vault-checking':
-    provider => 'crontab',
-    command  => '/etc/vault.d/kv-checking.sh >> /var/log/vault/kv-checking.log 2>&1',
-    user     => 'vault',
-    minute   => '*/15',
-    require  => [
-      File['/etc/vault.d/.cron.env'],
+  cron { $cron_name:
+    provider    => 'crontab',
+    environment => "CRON_NAME=${cron_name}",
+    command     => "/etc/vault.d/kv-checking.sh >> ${log_file} 2>&1",
+    user        => 'vault',
+    minute      => '*/15',
+    require     => [
+      File["/etc/vault.d/${cron_name}.env"],
       File['kv-checking-scipt'],
-      File['/var/log/vault/kv-checking.log'],
+      File[$log_file],
+      File[$mount_file],
+      File[$policy_file],
     ],
   }
 }

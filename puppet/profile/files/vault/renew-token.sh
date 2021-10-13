@@ -1,13 +1,16 @@
 #!/usr/bin/env sh
 
+EXPECT_TOKEN_NAME="${CRON_NAME:-token-checking}"
+ENV_NAME="${CRON_NAME:-.cron}"
+
 printStatus() {
   >&2 echo "$(date +"%F %T") - $1"
 }
 
 removeTokenInEnv() {
-  sed '/VAULT_TOKEN/d' /etc/vault.d/.cron.env > .cron.env.temp
-  sed '/^$/d' .cron.env.temp > /etc/vault.d/.cron.env
-  rm .cron.env.temp
+  sed '/VAULT_TOKEN/d' "/etc/vault.d/$ENV_NAME.env" > /etc/vault.d/.temp
+  sed '/^$/d' /etc/vault.d/.temp > "/etc/vault.d/$ENV_NAME.env"
+  rm /etc/vault.d/.temp
 }
 
 if [ -z "$VAULT_API_ADDR" ]; then
@@ -27,7 +30,7 @@ fi
 TOKEN_NAME=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/auth/token/lookup-self \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   | $JQ_BIN -r '.data.display_name')
-if [ "$TOKEN_NAME" = "token-service-checking" ]; then
+if [ "$TOKEN_NAME" = "token-$EXPECT_TOKEN_NAME" ]; then
   >&2 printf "%s - Using wanted token, start renew token..." "$(date +"%F %T")"
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/renew-self \
@@ -37,7 +40,10 @@ if [ "$TOKEN_NAME" = "token-service-checking" ]; then
   exit 0;
 elif [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"
+  removeTokenInEnv
+  exit 1;
+else
+  printStatus "Not finding token"
 fi
 
 removeTokenInEnv
-exit 1;

@@ -25,7 +25,6 @@ ENCRYPT_SERVICE_POLICY="/etc/vault.d/encrypt-service-policy.json"
 # C - Generator policy
 ENCRYPT_SERVICE_GENERATOR_POLICY="/etc/vault.d/encrypt-service-generator-policy.json"
 
-CAT_BIN=$(command -v cat)
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
 
@@ -87,7 +86,7 @@ signCSRByRoot() {
     return 1;
   fi
 
-  PKI_ROOT_TOKEN=$($CAT_BIN "$PKI_ROOT_TOKEN_FILE")
+  PKI_ROOT_TOKEN=$(cat "$PKI_ROOT_TOKEN_FILE")
   TOKEN_NAME=$($CURL_BIN -s -X GET "$PKI_ROOT_API_ADDR"/v1/auth/token/lookup-self \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN -r '.data.display_name')
@@ -98,7 +97,7 @@ signCSRByRoot() {
 
   TTL=$($JQ_BIN -r '.ttl // "1h"' $PKI_SETTING)
   DATA=$($JQ_BIN -n \
-    --arg csr "$($CAT_BIN "$PEM_CSR")" \
+    --arg csr "$(cat "$PEM_CSR")" \
     --arg ttl "$TTL" \
     "{\"csr\": \$csr,\"use_csr_values\":true,\"ttl\":\$ttl}")
 
@@ -107,7 +106,7 @@ signCSRByRoot() {
     -d "$DATA" \
     | $JQ_BIN -r '.data.certificate' > "$PEM_CERT"
 
-  CERT=$($CAT_BIN "$PEM_CERT")
+  CERT=$(cat "$PEM_CERT")
   if [ "$CERT" = "null" ] || [ -z "$CERT" ]; then
     printStatus "Token cannot generate certificate"
     return 1;
@@ -119,7 +118,7 @@ signCSRByRoot() {
 
 setSignedCert() {
   DATA=$($JQ_BIN -n \
-    --arg certificate "$($CAT_BIN "$PEM_CERT")" \
+    --arg certificate "$(cat "$PEM_CERT")" \
     "{\"certificate\": \$certificate}")
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/intermediate/set-signed \
@@ -146,7 +145,7 @@ generateTokenRole() {
 
 generatePolicy() {
   printStatus "Generate $1 policy"
-  POLICY=$($CAT_BIN "$2")
+  POLICY=$(cat "$2")
   DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \
@@ -182,12 +181,6 @@ generateTokenRole
 generateCSR && signCSRByRoot && setSignedCert
 generatePolicy 'encrypt-service' $ENCRYPT_SERVICE_POLICY
 generatePolicy 'encrypt-service-generator' $ENCRYPT_SERVICE_GENERATOR_POLICY
-
-# generate role policy
-POLICY='encrypt-service-generator'
-if [ "$(checkPolicy $POLICY)" = "null" ]; then
-  generatePolicy $POLICY $ENCRYPT_SERVICE_GENERATOR_POLICY
-fi
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"

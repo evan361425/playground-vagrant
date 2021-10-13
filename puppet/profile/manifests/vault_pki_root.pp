@@ -4,6 +4,7 @@ class profile::vault_pki_root (
   Hash             $pki_setting,
   Hash             $pki_intermediate_policy,
   # optional
+  Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
   Optional[String] $api_addr = 'http://0.0.0.0:8200',
 ) {
@@ -16,7 +17,9 @@ class profile::vault_pki_root (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}\nVAULT_API_ADDR=${api_addr}"),
+    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
+VAULT_ROOT_TOKEN=${root_token}
+VAULT_API_ADDR=${api_addr}"),
     require => Package['vault'],
   }
 

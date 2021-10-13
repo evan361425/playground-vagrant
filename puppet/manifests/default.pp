@@ -47,6 +47,7 @@ node 'vault-pki-root.example.com' {
   }
 
   class { 'profile::vault_pki_root':
+    root_token              => lookup('vault_pki_root_root_token'),
     recovery_keys           => lookup('vault_pki_root_recovery_keys'),
     mount_setting           => {
       type   => 'pki',
@@ -114,6 +115,7 @@ node 'vault-pki-int.example.com' {
   }
 
   class { 'profile::vault_pki_int':
+    root_token                       => lookup('vault_pki_int_root_token'),
     recovery_keys                    => lookup('vault_pki_int_recovery_keys'),
     mount_setting                    => {
       type   => 'pki',
@@ -208,32 +210,25 @@ node 'vault-kv.example.com' {
     key_source_ctmpl         => 'key.ctmpl',
     key_destination          => 'key.pem',
     vault_address            => 'http://vault-pki-int.example.com:8200',
-    vault_token              => lookup('vault_pki_int_token')
+    vault_token              => lookup('vault_pki_int_root_token')
   }
 
   class { 'profile::vault_kv':
-    recovery_keys                  => lookup('vault_kv_recovery_keys'),
-    mount_setting                  => {
+    root_token     => lookup('vault_kv_root_token'),
+    recovery_keys  => lookup('vault_kv_recovery_keys'),
+    mount_setting  => {
       type    => 'kv',
+      path    => 'develop',
       options => {
         version => '2'
       }
     },
-    secret_client_policy           => {
+    policy_setting => {
+      name => 'develop-secret-reader-policy',
       path => {
         'develop/*'             => {
           'capabilities' => ['read']
         }
-      }
-    },
-    secret_client_generator_policy => {
-      path => {
-        'auth/token/create/secret-client' => {
-          'capabilities' => ['create', 'update']
-        },
-        'auth/token/renew-self'           => {
-          'capabilities' => ['create', 'update']
-        },
       }
     }
   }
