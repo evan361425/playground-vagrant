@@ -6,6 +6,9 @@
 # - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
 # - PKI_ROOT_API_ADDR       - needed when renew certificate
 # - PKI_ROOT_TOKEN_FILE     - needed when renew certificate
+# - PEM_CSR                 - location of CSR
+# - PEM_CERT                - location of certificate
+# shellcheck source=/dev/null
 . /etc/vault.d/.cron.env
 
 # Needed files when initializing
@@ -34,12 +37,12 @@ printStatus() {
 }
 
 mountPKIIfNeed() {
-  PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
+  PKI_RESULT=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN '.data."pki/"')
 
   if [ "${PKI_RESULT}" = "null" ]; then
-    $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+    $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/sys/mounts/pki \
       -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
       -d "@$MOUNT_SETTING" > /dev/null
     printStatus "Mount PKI successfully"
@@ -54,14 +57,13 @@ shouldResignRootCert() {
   fi
 
   # If unparsable, exit
-  openssl x509 -in $PEM_CERT > /dev/null 2>&1
-  if [ "$?" -ne "0" ]; then
+  if ! openssl x509 -in "$PEM_CERT" > /dev/null 2>&1; then
     printStatus "Certificate non-parsable"
     return 0;
   fi
 
   # If not expired in next 60 seconds
-  if openssl x509 -in $PEM_CERT -noout -checkend 60; then
+  if openssl x509 -in "$PEM_CERT" -noout -checkend 60; then
     return 1;
   else
     printStatus "Certificate is going to expired, start renew"
@@ -70,10 +72,10 @@ shouldResignRootCert() {
 }
 
 generateCSR() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/generate/internal \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/intermediate/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
-    | $JQ_BIN -r '.data.csr' > $PEM_CSR
+    | $JQ_BIN -r '.data.csr' > "$PEM_CSR"
 
   printStatus "CSR generated"
 
@@ -85,8 +87,8 @@ signCSRByRoot() {
     return 1;
   fi
 
-  PKI_ROOT_TOKEN=$($CAT_BIN $PKI_ROOT_TOKEN_FILE)
-  TOKEN_NAME=$($CURL_BIN -s -X GET $PKI_ROOT_API_ADDR/v1/auth/token/lookup-self \
+  PKI_ROOT_TOKEN=$($CAT_BIN "$PKI_ROOT_TOKEN_FILE")
+  TOKEN_NAME=$($CURL_BIN -s -X GET "$PKI_ROOT_API_ADDR"/v1/auth/token/lookup-self \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN -r '.data.display_name')
   if [ "$TOKEN_NAME" = "null" ] || [ -z "$TOKEN_NAME" ]; then
@@ -96,16 +98,16 @@ signCSRByRoot() {
 
   TTL=$($JQ_BIN -r '.ttl // "1h"' $PKI_SETTING)
   DATA=$($JQ_BIN -n \
-    --arg csr "$($CAT_BIN $PEM_CSR)" \
+    --arg csr "$($CAT_BIN "$PEM_CSR")" \
     --arg ttl "$TTL" \
-    '{"csr": $csr,"use_csr_values":true,"ttl":$ttl}')
+    "{\"csr\": \$csr,\"use_csr_values\":true,\"ttl\":\$ttl}")
 
-  $CURL_BIN -s -X POST $PKI_ROOT_API_ADDR/v1/pki/root/sign-intermediate \
+  $CURL_BIN -s -X POST "$PKI_ROOT_API_ADDR"/v1/pki/root/sign-intermediate \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
     -d "$DATA" \
-    | $JQ_BIN -r '.data.certificate' > $PEM_CERT
+    | $JQ_BIN -r '.data.certificate' > "$PEM_CERT"
 
-  CERT=$($CAT_BIN $PEM_CERT)
+  CERT=$($CAT_BIN "$PEM_CERT")
   if [ "$CERT" = "null" ] || [ -z "$CERT" ]; then
     printStatus "Token cannot generate certificate"
     return 1;
@@ -117,10 +119,10 @@ signCSRByRoot() {
 
 setSignedCert() {
   DATA=$($JQ_BIN -n \
-    --arg certificate "$($CAT_BIN $PEM_CERT)" \
-    '{"certificate": $certificate}')
+    --arg certificate "$($CAT_BIN "$PEM_CERT")" \
+    "{\"certificate\": \$certificate}")
 
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/intermediate/set-signed \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/intermediate/set-signed \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "$DATA"
   printStatus "Finish set intermediate PKI signed"
@@ -129,7 +131,7 @@ setSignedCert() {
 # Issue certificate by
 # curl -X POST localhost:8200/v1/pki/issue/encrypt-service -H "X-Vault-Token: " -d '{"common_name": "example.encrypt-service.com"}'
 generatePKIRole() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/roles/encrypt-service \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/roles/encrypt-service \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_ENCRYPT_SERVICE"
 }
@@ -137,15 +139,15 @@ generatePKIRole() {
 # Generate token by
 # curl -X POST localhost:8200/v1/auth/token/create/encrypt-service -H "X-Vault-Token: " -d '{"ttl":"15m"}'
 generateTokenRole() {
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/roles/encrypt-service \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/roles/encrypt-service \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d '{"allowed_policies":["encrypt-service"],"token_ttl":"15m"}'
 }
 
 generatePolicy() {
   printStatus "Generate $1 policy"
-  POLICY=$($CAT_BIN $2)
-  DATA=$($JQ_BIN -n --arg policy "$POLICY" '{"policy": $policy}')
+  POLICY=$($CAT_BIN "$2")
+  DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
@@ -158,7 +160,7 @@ if [ -f "$PKI_ROOT_TOKEN_FILE" ]; then
 fi
 
 NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
+if [ -n "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
 
   exit 0;
@@ -181,11 +183,17 @@ generateCSR && signCSRByRoot && setSignedCert
 generatePolicy 'encrypt-service' $ENCRYPT_SERVICE_POLICY
 generatePolicy 'encrypt-service-generator' $ENCRYPT_SERVICE_GENERATOR_POLICY
 
+# generate role policy
+POLICY='encrypt-service-generator'
+if [ "$(checkPolicy $POLICY)" = "null" ]; then
+  generatePolicy $POLICY $ENCRYPT_SERVICE_GENERATOR_POLICY
+fi
+
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
-SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/create \
+SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   -d '{"display_name":"service-checking","ttl":"1h","policies":["default","encrypt-service-generator"]}' \
   | ${JQ_BIN} -r '.auth.client_token')
 
-echo "\nVAULT_TOKEN=$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
+printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env

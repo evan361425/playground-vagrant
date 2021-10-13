@@ -4,6 +4,7 @@
 # - VAULT_API_ADDR          - required
 # - VAULT_TOKEN             - required if VAULT_RECOVERY_KEYS not set
 # - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
+# shellcheck source=/dev/null
 . /etc/vault.d/.cron.env
 
 # Needed files when initializing
@@ -24,12 +25,12 @@ printStatus() {
 }
 
 mountPKIIfNeed() {
-  PKI_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/mounts \
+  PKI_RESULT=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN '.data."pki/"')
   if [ "${PKI_RESULT}" = "null" ]; then
     printStatus "Enable PKI"
-    $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/sys/mounts/pki \
+    $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/sys/mounts/pki \
       -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
       -d "@$MOUNT_SETTING" > /dev/null
   fi
@@ -37,7 +38,7 @@ mountPKIIfNeed() {
 
 generateCert() {
   printStatus "Generate certificate"
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/pki/root/generate/internal \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/root/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
     | $JQ_BIN '.data' > /etc/vault.d/CERTIFICATE.pem
@@ -45,8 +46,8 @@ generateCert() {
 
 generatePolicy() {
   printStatus "Generate $1 policy"
-  POLICY=$($CAT_BIN $2)
-  DATA=$($JQ_BIN -n --arg policy "$POLICY" '{"policy": $policy}')
+  POLICY=$($CAT_BIN "$2")
+  DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
@@ -55,7 +56,7 @@ generatePolicy() {
 
 # ============================ Check and prepare env ===========================
 NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ ! -z "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
+if [ -n "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
   exit 0;
 fi
 
@@ -75,9 +76,9 @@ generatePolicy 'pki-intermediate' $PKI_INTERMEDIATE_POLICY
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
-SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/create \
+SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   -d '{"display_name":"service-checking","ttl":"1h","policies":["default","pki-intermediate"]}' \
   | ${JQ_BIN} -r '.auth.client_token')
 
-echo "\nVAULT_TOKEN=$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
+printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env

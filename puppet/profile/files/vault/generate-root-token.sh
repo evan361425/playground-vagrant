@@ -2,18 +2,18 @@
 
 startAttempt()
 {
-  $CURL_BIN -s -X PUT $VAULT_API_ADDR/v1/sys/generate-root/attempt
+  $CURL_BIN -s -X PUT "$VAULT_API_ADDR"/v1/sys/generate-root/attempt
 }
 
 restartAttempt()
 {
-  $CURL_BIN -s -X DELETE $VAULT_API_ADDR/v1/sys/generate-root/attempt
+  $CURL_BIN -s -X DELETE "$VAULT_API_ADDR"/v1/sys/generate-root/attempt
   startAttempt
 }
 
 attemptRecoverKey()
 {
-  $CURL_BIN -s -X PUT $VAULT_API_ADDR/v1/sys/generate-root/update \
+  $CURL_BIN -s -X PUT "$VAULT_API_ADDR"/v1/sys/generate-root/update \
     -H "Content-Type: application/json" \
     -d "{\"key\": \"$1\", \"nonce\": \"$2\"}"
 }
@@ -25,17 +25,18 @@ printStatus() {
 # Using recovery keys to generate root token
 RESPONSE=$(startAttempt)
 # Reset progress if needed
-if [ "$(echo $RESPONSE | $JQ_BIN -r '.errors[0]'))" = 'root generation already in progress' ]; then
+ERROR_MSG=$(echo "$RESPONSE" | $JQ_BIN -r '.errors[0]')
+if [ "$ERROR_MSG" = 'root generation already in progress' ]; then
   printStatus "Reattempt root token generate process"
   RESPONSE=$(restartAttempt)
 fi
 
-OTP=$(echo $RESPONSE | $JQ_BIN -r '.otp')
-NONCE=$(echo $RESPONSE | $JQ_BIN -r '.nonce')
-REQUIRED_COUNT=$(echo $RESPONSE | $JQ_BIN '.required')
+OTP=$(echo "$RESPONSE" | $JQ_BIN -r '.otp')
+NONCE=$(echo "$RESPONSE" | $JQ_BIN -r '.nonce')
+REQUIRED_COUNT=$(echo "$RESPONSE" | $JQ_BIN '.required')
 
 # Check recovery keys count
-COUNT=$(echo $VAULT_RECOVERY_KEYS | tr -cd ',' | wc -c)
+COUNT=$(echo "$VAULT_RECOVERY_KEYS" | tr -cd ',' | wc -c)
 COUNT=$((COUNT+1))
 printStatus "Get $COUNT recovery key(s)"
 if [ "$REQUIRED_COUNT" -gt $COUNT ]; then
@@ -44,12 +45,12 @@ if [ "$REQUIRED_COUNT" -gt $COUNT ]; then
 fi
 
 # Enter keys one by one
-KEYS_ARRAY=$(echo $VAULT_RECOVERY_KEYS | tr "," " ")
+KEYS_ARRAY=$(echo "$VAULT_RECOVERY_KEYS" | tr "," " ")
 for KEY in $KEYS_ARRAY; do
-  ENCODED_TOKEN=$(attemptRecoverKey $KEY $NONCE | $JQ_BIN -r '.encoded_token')
+  ENCODED_TOKEN=$(attemptRecoverKey "$KEY" "$NONCE" | $JQ_BIN -r '.encoded_token')
 
-  if [ "$ENCODED_TOKEN" != "null" ] && [ ! -z "$ENCODED_TOKEN" ]; then
-    VAULT_ROOT_TOKEN=$(VAULT_ADDR="$VAULT_API_ADDR" vault operator generate-root -decode=$ENCODED_TOKEN -otp=$OTP)
+  if [ "$ENCODED_TOKEN" != "null" ] && [ -n "$ENCODED_TOKEN" ]; then
+    VAULT_ROOT_TOKEN=$(VAULT_ADDR="$VAULT_API_ADDR" vault operator generate-root -decode="$ENCODED_TOKEN" -otp="$OTP")
     break
   fi
 done
@@ -60,4 +61,4 @@ if [ -z "$VAULT_ROOT_TOKEN" ]; then
 fi
 
 printStatus "Generated root token"
-echo $VAULT_ROOT_TOKEN
+echo "$VAULT_ROOT_TOKEN"

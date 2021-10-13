@@ -17,20 +17,20 @@ if [ -z "$VAULT_TOKEN_HEADER" ]; then
   printStatus "Missing VAULT_TOKEN_HEADER"
 fi
 
-INIT_RESULT=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/sys/init | $JQ_BIN .initialized)
+INIT_RESULT=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/sys/init | $JQ_BIN .initialized)
 if [ "${INIT_RESULT}" = "false" ]; then
   printStatus "Vault was not initialized"
   exit 1
 fi
 
 # Check token presenting
-TOKEN_NAME=$($CURL_BIN -s -X GET $VAULT_API_ADDR/v1/auth/token/lookup-self \
+TOKEN_NAME=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/auth/token/lookup-self \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   | $JQ_BIN -r '.data.display_name')
 if [ "$TOKEN_NAME" = "token-service-checking" ]; then
-  >&2 echo -n "$(date +"%F %T") - Using wanted token, start renew token..."
+  >&2 printf "%s - Using wanted token, start renew token..." "$(date +"%F %T")"
 
-  $CURL_BIN -s -X POST $VAULT_API_ADDR/v1/auth/token/renew-self \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/renew-self \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER"
 
   >&2 echo " done"
@@ -39,5 +39,5 @@ elif [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"
 fi
 
-removeTokenInEnv()
+removeTokenInEnv
 exit 1;
