@@ -77,6 +77,22 @@ PEM_CERT=${$pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],
   }
 
+  file { "${$pki_cert_folder}/INTERMEDIATE_CSR.pem":
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    content => '',
+    require => File[$pki_cert_folder],
+  }
+
+  file { "${$pki_cert_folder}/INTERMEDIATE_CERT.pem":
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    content => '',
+    require => File[$pki_cert_folder],
+  }
+
   file { 'pki-checking-scipt':
     ensure  => present,
     owner   => 'vault',
