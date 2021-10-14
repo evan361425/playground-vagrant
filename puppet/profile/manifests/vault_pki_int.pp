@@ -2,9 +2,7 @@
 class profile::vault_pki_int (
   Hash             $mount_setting,
   Hash             $pki_setting,
-  Hash             $pki_encrypt_service,
-  Hash             $encrypt_service_policy,
-  Hash             $encrypt_service_generator_policy,
+  Array            $pki_clients,
   String           $pki_root_api_addr,
   # optional
   Optional[String] $pki_root_token_file = '',
@@ -47,27 +45,11 @@ PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],
   }
 
-  file { '/etc/vault.d/pki-encrypt-service.json':
+  file { '/etc/vault.d/pki-clients.json':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => to_json($pki_encrypt_service),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/encrypt-service-policy.json':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => to_json($encrypt_service_policy),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/encrypt-service-generator-policy.json':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => to_json($encrypt_service_generator_policy),
+    content => to_json($pki_clients),
     require => Package['vault'],
   }
 

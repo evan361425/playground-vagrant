@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-EXPECT_TOKEN_NAME="${CRON_NAME:-token-checking}"
+EXPECT_TOKEN_NAME="${CRON_NAME:-sevice-checking}"
 ENV_NAME="${CRON_NAME:-.cron}"
 
 printStatus() {

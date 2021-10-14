@@ -112,19 +112,19 @@ node 'vault-pki-int.example.com' {
   }
 
   class { 'profile::vault_pki_int':
-    root_token                       => lookup('vault_pki_int_root_token'),
-    recovery_keys                    => lookup('vault_pki_int_recovery_keys'),
-    mount_setting                    => {
+    root_token          => lookup('vault_pki_int_root_token'),
+    recovery_keys       => lookup('vault_pki_int_recovery_keys'),
+    mount_setting       => {
       type   => 'pki',
       config => {
         max_lease_ttl => '1h'
       }
     },
-    pki_setting                      => {
+    pki_setting         => {
       common_name => 'Vault Intermediate CA',
       ttl         => '930s'
     },
-    pki_clients                      => [
+    pki_clients         => [
       {
         allowed_domains    => 'encrypt-service.com',
         allow_subdomains   => true,
@@ -138,34 +138,8 @@ node 'vault-pki-int.example.com' {
         ttl             => '3m'
       }
     ],
-    encrypt_service_policy           => {
-      path                          => {
-        'pki/issue/encrypt-service' => {
-          'capabilities' => ['create', 'update']
-        },
-        'auth/token/renew-self'     => {
-          'capabilities' => ['create', 'update']
-        },
-      }
-    },
-    encrypt_service_generator_policy => {
-      path                                  => {
-        'auth/token/create/encrypt-service'  => {
-          'capabilities' => ['create', 'update']
-        },
-        'auth/token/renew-self'              => {
-          'capabilities' => ['create', 'update']
-        },
-        'pki/intermediate/set-signed'        => {
-          'capabilities' => ['create', 'update']
-        },
-        'pki/intermediate/generate/internal' => {
-          'capabilities' => ['create', 'update']
-        },
-      }
-    },
-    pki_root_api_addr                => 'http://vault-pki-root.example.com:8200',
-    pki_root_token_file              => '/etc/vault.d/ROOT_TOKEN'
+    pki_root_api_addr   => 'http://vault-pki-root.example.com:8200',
+    pki_root_token_file => '/etc/vault.d/ROOT_TOKEN'
   }
 }
 

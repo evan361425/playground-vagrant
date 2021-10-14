@@ -15,15 +15,8 @@
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
 PKI_SETTING="/etc/vault.d/pki-setting.json"
 
-# Using Token (policy bind with "C") to generate Client (policy bind with "B")
-# Client is able to issue itself by PKI which already setup by "A"
-# https://github.com/104corp/vault/issues/10
-# A - PKI role setting
-PKI_ENCRYPT_SERVICE="/etc/vault.d/pki-encrypt-service.json"
-# B - Client policy
-ENCRYPT_SERVICE_POLICY="/etc/vault.d/encrypt-service-policy.json"
-# C - Generator policy
-ENCRYPT_SERVICE_GENERATOR_POLICY="/etc/vault.d/encrypt-service-generator-policy.json"
+# Clients for intermediate PKI
+PKI_CLIENTS_FILE="/etc/vault.d/pki-clients.json"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
@@ -128,29 +121,29 @@ setSignedCert() {
 }
 
 # Issue certificate by
-# curl -X POST localhost:8200/v1/pki/issue/encrypt-service -H "X-Vault-Token: " -d '{"common_name": "example.encrypt-service.com"}'
+# curl -X POST localhost:8200/v1/pki/issue/$role -H "X-Vault-Token: " -d '{"common_name": "$role"}'
 generatePKIRole() {
-  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/roles/encrypt-service \
+  printStatus "Generate PKI Role $1"
+
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/pki/roles/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "@$PKI_ENCRYPT_SERVICE"
+    -d "$2"
 }
 
 # Generate token by
-# curl -X POST localhost:8200/v1/auth/token/create/encrypt-service -H "X-Vault-Token: " -d '{"ttl":"15m"}'
+# curl -X POST localhost:8200/v1/auth/token/create/$role -H "X-Vault-Token: " -d '{"ttl":"15m"}'
 generateTokenRole() {
-  $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/roles/encrypt-service \
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/auth/token/roles/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d '{"allowed_policies":["encrypt-service"],"token_ttl":"15m"}'
+    -d "{\"allowed_policies\":[\"$1\"]}"
 }
 
 generatePolicy() {
-  printStatus "Generate $1 policy"
-  POLICY=$(cat "$2")
-  DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
+  printStatus "Generate policy $1"
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "$DATA"
+    -d "$($JQ_BIN -n --arg policy "$2" "{\"policy\": \$policy}")"
 }
 
 # ============================ Check and prepare env ===========================
@@ -176,17 +169,42 @@ VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
 mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
-generatePKIRole
-generateTokenRole
 generateCSR && signCSRByRoot && setSignedCert
-generatePolicy 'encrypt-service' $ENCRYPT_SERVICE_POLICY
-generatePolicy 'encrypt-service-generator' $ENCRYPT_SERVICE_GENERATOR_POLICY
+
+generatePolicy "resign-root-certificate" "{
+  \"path\": {
+    \"pki/intermediate/set-signed\": {
+      \"capabilities\": [
+        \"create\",
+        \"update\"
+      ]
+    },
+    \"pki/intermediate/generate/internal\": {
+      \"capabilities\": [
+        \"create\",
+        \"update\"
+      ]
+    }
+  }
+}"
+
+SERVICE_CHECKING_TOKEN_POLICIES='"resign-root-certificate"'
+for client in $($JQ_BIN -r -c '.[]' $PKI_CLIENTS_FILE); do
+  name=$(echo "$client" | $JQ_BIN -r '.name')
+  generatePKIRole "$name" "$client"
+  # this token role allow to issue certificate
+  generateTokenRole "$name"
+  generatePolicy "$name" "{\"path\":{\"pki/issue/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
+  # generator to generate above token
+  generatePolicy "$name-generator" "{\"path\":{\"auth/token/create/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
+  SERVICE_CHECKING_TOKEN_POLICIES="$SERVICE_CHECKING_TOKEN_POLICIES,\"$name-generator\""
+done
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
 SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  -d '{"display_name":"service-checking","ttl":"1h","policies":["default","encrypt-service-generator"]}' \
+  -d "{\"display_name\":\"service-checking\",\"ttl\":\"1h\",\"policies\":[$SERVICE_CHECKING_TOKEN_POLICIES]}" \
   | ${JQ_BIN} -r '.auth.client_token')
 
 printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
