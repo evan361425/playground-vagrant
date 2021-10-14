@@ -1,2 +1,1 @@
-vault_pki_root_recovery_keys:
-vault_pki_int_recovery_keys:
+profile::vault::api_addr: "http://0.0.0.0:8200"

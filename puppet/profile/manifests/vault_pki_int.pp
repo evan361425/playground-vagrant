@@ -7,11 +7,10 @@ class profile::vault_pki_int (
   Hash             $encrypt_service_generator_policy,
   String           $pki_root_api_addr,
   # optional
-  Optional[String] $root_token = '',
   Optional[String] $pki_root_token_file = '',
-  Optional[String] $recovery_keys = '',
   Optional[String] $pki_cert_folder = '/etc/vault.d/certs',
-  Optional[String] $api_addr = 'http://0.0.0.0:8200',
+  Optional[String] $root_token = '',
+  Optional[String] $recovery_keys = '',
 ) {
 
   package { 'jq':
@@ -23,10 +22,10 @@ class profile::vault_pki_int (
     owner   => 'vault',
     group   => 'vault',
     content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
-VAULT_API_ADDR=${api_addr}
+VAULT_API_ADDR=${lookup('profile::vault::api_addr')}
 VAULT_ROOT_TOKEN=${root_token}
-PKI_ROOT_API_ADDR=${$pki_root_api_addr}
-PKI_ROOT_TOKEN_FILE=${$pki_root_token_file}
+PKI_ROOT_API_ADDR=${pki_root_api_addr}
+PKI_ROOT_TOKEN_FILE=${pki_root_token_file}
 PEM_CSR=${pki_cert_folder}/INTERMEDIATE_CSR.pem
 PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],
@@ -79,7 +78,7 @@ PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],
   }
 
-  file { "${$pki_cert_folder}/INTERMEDIATE_CSR.pem":
+  file { "${pki_cert_folder}/INTERMEDIATE_CSR.pem":
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -87,7 +86,7 @@ PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => File[$pki_cert_folder],
   }
 
-  file { "${$pki_cert_folder}/INTERMEDIATE_CERT.pem":
+  file { "${pki_cert_folder}/INTERMEDIATE_CERT.pem":
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',

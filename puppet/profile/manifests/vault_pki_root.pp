@@ -6,7 +6,6 @@ class profile::vault_pki_root (
   # optional
   Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
-  Optional[String] $api_addr = 'http://0.0.0.0:8200',
 ) {
 
   package { 'jq':
@@ -19,7 +18,7 @@ class profile::vault_pki_root (
     group   => 'vault',
     content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
 VAULT_ROOT_TOKEN=${root_token}
-VAULT_API_ADDR=${api_addr}"),
+VAULT_API_ADDR=${lookup('profile::vault::api_addr')}"),
     require => Package['vault'],
   }
 

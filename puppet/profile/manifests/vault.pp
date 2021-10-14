@@ -6,7 +6,6 @@ class profile::vault (
   Hash                       $seal,
   Hash                       $storage,
   # common
-  String                     $api_addr,
   String                     $hashicorp_apt_key_id,
   String                     $hashicorp_apt_key_server,
   String                     $http_proxy,
@@ -32,7 +31,7 @@ class profile::vault (
   class { 'vault':
     install_method => 'repo',
     enable_ui      => $enable_ui,
-    api_addr       => $api_addr,
+    api_addr       => lookup('profile::vault::api_addr'),
     seal           => $seal,
     storage        => $storage,
     listener       => $listener,

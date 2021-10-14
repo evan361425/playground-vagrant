@@ -1,6 +1,5 @@
 $hashicorp_apt_key_id = 'E8A032E094D8EB4EA189D270DA418C88A3219F7B';
 $hashicorp_apt_key_server = 'hkp://keyserver.ubuntu.com:80';
-$api_addr = 'http://0.0.0.0:8200';
 $aws_region = 'ap-northeast-1';
 
 node 'vault-pki-root.example.com' {
@@ -10,7 +9,6 @@ node 'vault-pki-root.example.com' {
     enable_ui                => true,
     http_proxy               => '',
     https_proxy              => '',
-    api_addr                 => $api_addr,
     hashicorp_apt_key_id     => $hashicorp_apt_key_id,
     hashicorp_apt_key_server => $hashicorp_apt_key_server,
     seal                     => {
@@ -78,7 +76,6 @@ node 'vault-pki-int.example.com' {
     enable_ui                => true,
     http_proxy               => '',
     https_proxy              => '',
-    api_addr                 => $api_addr,
     hashicorp_apt_key_id     => $hashicorp_apt_key_id,
     hashicorp_apt_key_server => $hashicorp_apt_key_server,
     seal                     => {
@@ -104,7 +101,7 @@ node 'vault-pki-int.example.com' {
         tls_disable => 1
       }
     },
-    extra_config             =>{
+    extra_config             => {
       service_registration => {
         consul             => {
           address => '0.0.0.0:8500',
@@ -127,14 +124,20 @@ node 'vault-pki-int.example.com' {
       common_name => 'Vault Intermediate CA',
       ttl         => '930s'
     },
-    pki_encrypt_service              => {
-      allowed_domains    => 'encrypt-service.com',
-      allow_subdomains   => true,
-      allow_glob_domains => true,
-      generate_lease     => true,
-      max_ttl            => '2m',
-      ttl                => '1m'
-    },
+    pki_clients                      => [
+      {
+        allowed_domains    => 'encrypt-service.com',
+        allow_subdomains   => true,
+        allow_glob_domains => true,
+        max_ttl            => '10m',
+        ttl                => '8m'
+      },
+      {
+        allowed_domains => 'encrypt-service-client.com',
+        max_ttl         => '5m',
+        ttl             => '3m'
+      }
+    ],
     encrypt_service_policy           => {
       path                          => {
         'pki/issue/encrypt-service' => {
@@ -173,7 +176,6 @@ node 'vault-kv.example.com' {
     enable_ui                => true,
     http_proxy               => '',
     https_proxy              => '',
-    api_addr                 => $api_addr,
     hashicorp_apt_key_id     => $hashicorp_apt_key_id,
     hashicorp_apt_key_server => $hashicorp_apt_key_server,
     seal                     => {
