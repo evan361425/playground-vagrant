@@ -1,14 +1,13 @@
-# Building key/vaule secrets manager
+# Vault key-value secret engine
 class profile::vault_kv (
   Hash             $mount_setting,
   Hash             $policy_setting,
-  Optional[String] $root_token = '',
   Optional[String] $cron_name = 'kv-secrets',
   Optional[String] $mount_file = '/etc/vault.d/mount-kv-setting.json',
   Optional[String] $policy_file = '/etc/vault.d/kv-policy.json',
   Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
+  Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
-  Optional[String] $api_addr = 'http://0.0.0.0:8200',
 ) {
 
   package { 'jq':
@@ -21,7 +20,7 @@ class profile::vault_kv (
     group   => 'vault',
     content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
 VAULT_ROOT_TOKEN=${root_token}
-VAULT_API_ADDR=${api_addr}
+VAULT_API_ADDR=${lookup('profile::vault::api_addr')}
 MOUNT_FILE=${mount_file}
 POLICY_FILE=${policy_file}"),
     require => Package['vault'],
