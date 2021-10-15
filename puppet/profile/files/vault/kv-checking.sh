@@ -71,7 +71,7 @@ generatePolicy() {
 
 # ============================== Setup if needed ===============================
 NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ -n "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
+if [ -n "$NEW_TOKEN" ]; then
   exit 0;
 fi
 

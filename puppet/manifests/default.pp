@@ -45,28 +45,18 @@ node 'vault-pki-root.example.com' {
   }
 
   class { 'profile::vault_pki_root':
-    root_token              => lookup('vault_pki_root_root_token'),
-    recovery_keys           => lookup('vault_pki_root_recovery_keys'),
-    mount_setting           => {
+    root_token    => lookup('vault_pki_root_root_token'),
+    recovery_keys => lookup('vault_pki_root_recovery_keys'),
+    mount_setting => {
       type   => 'pki',
       config => {
         max_lease_ttl => '1d'
       }
     },
-    pki_setting             => {
+    pki_setting   => {
       common_name => 'Vault Root CA',
       ttl         => '1d'
     },
-    pki_intermediate_policy => {
-      path                          => {
-        'pki/root/sign-intermediate' => {
-          'capabilities' => ['create', 'update']
-        },
-        'auth/token/renew-self'      => {
-          'capabilities' => ['create', 'update']
-        },
-      }
-    }
   }
 }
 
@@ -112,20 +102,21 @@ node 'vault-pki-int.example.com' {
   }
 
   class { 'profile::vault_pki_int':
-    root_token          => lookup('vault_pki_int_root_token'),
-    recovery_keys       => lookup('vault_pki_int_recovery_keys'),
-    mount_setting       => {
+    root_token        => lookup('vault_pki_int_root_token'),
+    recovery_keys     => lookup('vault_pki_int_recovery_keys'),
+    mount_setting     => {
       type   => 'pki',
       config => {
         max_lease_ttl => '1h'
       }
     },
-    pki_setting         => {
+    pki_setting       => {
       common_name => 'Vault Intermediate CA',
       ttl         => '930s'
     },
-    pki_clients         => [
+    pki_clients       => [
       {
+        name               => 'encrypt-service',
         allowed_domains    => 'encrypt-service.com',
         allow_subdomains   => true,
         allow_glob_domains => true,
@@ -133,13 +124,13 @@ node 'vault-pki-int.example.com' {
         ttl                => '8m'
       },
       {
+        name            => 'encrypt-service-client',
         allowed_domains => 'encrypt-service-client.com',
         max_ttl         => '5m',
         ttl             => '3m'
       }
     ],
-    pki_root_api_addr   => 'http://vault-pki-root.example.com:8200',
-    pki_root_token_file => '/etc/vault.d/ROOT_TOKEN'
+    pki_root_api_addr => 'http://vault-pki-root.example.com:8200',
   }
 }
 

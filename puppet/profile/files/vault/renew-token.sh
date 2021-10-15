@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-EXPECT_TOKEN_NAME="${CRON_NAME:-sevice-checking}"
+EXPECT_TOKEN_NAME="${CRON_NAME:-service-checking}"
 ENV_NAME="${CRON_NAME:-.cron}"
 
 printStatus() {
@@ -15,9 +15,11 @@ removeTokenInEnv() {
 
 if [ -z "$VAULT_API_ADDR" ]; then
   printStatus "Missing VAULT_API_ADDR"
+  exit 1
 fi
 if [ -z "$VAULT_TOKEN_HEADER" ]; then
   printStatus "Missing VAULT_TOKEN_HEADER"
+  exit 1
 fi
 
 INIT_RESULT=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/sys/init | $JQ_BIN .initialized)
@@ -34,16 +36,15 @@ if [ "$TOKEN_NAME" = "token-$EXPECT_TOKEN_NAME" ]; then
   >&2 printf "%s - Using wanted token, start renew token..." "$(date +"%F %T")"
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/renew-self \
-    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER"
+    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" > /dev/null
 
   >&2 echo " done"
-  exit 0;
+  
+  echo "$VAULT_TOKEN"
 elif [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"
   removeTokenInEnv
-  exit 1;
 else
   printStatus "Not finding token"
+  removeTokenInEnv
 fi
-
-removeTokenInEnv

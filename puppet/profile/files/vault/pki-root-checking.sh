@@ -10,8 +10,6 @@
 # Needed files when initializing
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
 PKI_SETTING="/etc/vault.d/pki-setting.json"
-# Policies
-PKI_INTERMEDIATE_POLICY="/etc/vault.d/pki-intermediate-policy.json"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
@@ -43,19 +41,23 @@ generateCert() {
     | $JQ_BIN '.data' > /etc/vault.d/CERTIFICATE.pem
 }
 
+generateTokenRole() {
+  $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/auth/token/roles/$1" \
+    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
+    -d "{\"allowed_policies\":[\"$1\"]}"
+}
+
 generatePolicy() {
-  printStatus "Generate $1 policy"
-  POLICY=$(cat "$2")
-  DATA=$($JQ_BIN -n --arg policy "$POLICY" "{\"policy\": \$policy}")
+  printStatus "Generate policy $1"
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/sys/policy/$1" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "$DATA"
+    -d "$($JQ_BIN -n --arg policy "$2" "{\"policy\": \$policy}")"
 }
 
 # ============================ Check and prepare env ===========================
 NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ -n "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
+if [ -n "$NEW_TOKEN" ]; then
   exit 0;
 fi
 
@@ -71,13 +73,15 @@ mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
 generateCert
-generatePolicy 'pki-intermediate' $PKI_INTERMEDIATE_POLICY
+generateTokenRole "pki-intermediate"
+generatePolicy "pki-intermediate" '{"path":{"pki/root/sign-intermediate":{"capabilities":["create","update"]}}}'
+generatePolicy "pki-intermediate-generator" '{"path":{"auth/token/create/pki-intermediate":{"capabilities":["create","update"]}}}'
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
 SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  -d '{"display_name":"service-checking","ttl":"1h","policies":["default","pki-intermediate"]}' \
+  -d '{"display_name":"service-checking","ttl":"1h","policies":["pki-intermediate-generator"]}' \
   | ${JQ_BIN} -r '.auth.client_token')
 
 printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env

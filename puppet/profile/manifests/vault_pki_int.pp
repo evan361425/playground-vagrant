@@ -5,7 +5,7 @@ class profile::vault_pki_int (
   Array            $pki_clients,
   String           $pki_root_api_addr,
   # optional
-  Optional[String] $pki_root_token_file = '',
+  Optional[String] $pki_root_token = '',
   Optional[String] $pki_cert_folder = '/etc/vault.d/certs',
   Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
@@ -23,7 +23,7 @@ class profile::vault_pki_int (
 VAULT_API_ADDR=${lookup('profile::vault::api_addr')}
 VAULT_ROOT_TOKEN=${root_token}
 PKI_ROOT_API_ADDR=${pki_root_api_addr}
-PKI_ROOT_TOKEN_FILE=${pki_root_token_file}
+PKI_ROOT_TOKEN=${pki_root_token}
 PEM_CSR=${pki_cert_folder}/INTERMEDIATE_CSR.pem
 PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
     require => Package['vault'],

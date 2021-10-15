@@ -5,7 +5,7 @@
 # - VAULT_TOKEN             - required if VAULT_RECOVERY_KEYS not set
 # - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
 # - PKI_ROOT_API_ADDR       - needed when renew certificate
-# - PKI_ROOT_TOKEN_FILE     - needed when renew certificate
+# - PKI_ROOT_TOKEN          - needed when renew certificate
 # - PEM_CSR                 - location of CSR
 # - PEM_CERT                - location of certificate
 # shellcheck source=/dev/null
@@ -48,6 +48,22 @@ shouldResignRootCert() {
     return 0;
   fi
 
+  if [ -z "$PKI_ROOT_TOKEN" ]; then
+    printStatus "Root-PKI's token not found"
+    return 0;
+  fi
+
+  TOKEN_NAME=$($CURL_BIN -s "$PKI_ROOT_API_ADDR"/v1/auth/token/lookup-self \
+    -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
+    | $JQ_BIN -r '.data.display_name')
+  if [ "$TOKEN_NAME" = "null" ] || [ -z "$TOKEN_NAME" ]; then
+    printStatus "Wrong Root API Address $PKI_ROOT_API_ADDR or Wrong Token"
+    return 0;
+  fi
+  # renew token
+  $CURL_BIN -s -X POST "$PKI_ROOT_API_ADDR"/v1/auth/token/renew-self \
+    -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" > /dev/null
+
   # If unparsable, exit
   if ! openssl x509 -in "$PEM_CERT" > /dev/null 2>&1; then
     printStatus "Certificate non-parsable"
@@ -75,19 +91,6 @@ generateCSR() {
 }
 
 signCSRByRoot() {
-  if [ ! -f "$PKI_ROOT_TOKEN_FILE" ]; then
-    return 1;
-  fi
-
-  PKI_ROOT_TOKEN=$(cat "$PKI_ROOT_TOKEN_FILE")
-  TOKEN_NAME=$($CURL_BIN -s -X GET "$PKI_ROOT_API_ADDR"/v1/auth/token/lookup-self \
-    -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" \
-    | $JQ_BIN -r '.data.display_name')
-  if [ "$TOKEN_NAME" = "null" ] || [ -z "$TOKEN_NAME" ]; then
-    printStatus "Wrong Root API Address $PKI_ROOT_API_ADDR or Wrong Token"
-    return 1;
-  fi
-
   TTL=$($JQ_BIN -r '.ttl // "1h"' $PKI_SETTING)
   DATA=$($JQ_BIN -n \
     --arg csr "$(cat "$PEM_CSR")" \
@@ -147,13 +150,9 @@ generatePolicy() {
 }
 
 # ============================ Check and prepare env ===========================
-if [ -f "$PKI_ROOT_TOKEN_FILE" ]; then
-  printStatus "The file $PKI_ROOT_TOKEN_FILE exist, please remove it as soon as possible"
-fi
-
 NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ -n "$NEW_TOKEN"  ] && [ "$NEW_TOKEN" != "null" ]; then
-  shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
+if [ -n "$NEW_TOKEN" ]; then
+  shouldResignRootCert && signCSRByRoot && setSignedCert
 
   exit 0;
 fi
@@ -169,7 +168,7 @@ VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
 mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
-generateCSR && signCSRByRoot && setSignedCert
+shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
 
 generatePolicy "resign-root-certificate" "{
   \"path\": {
@@ -191,13 +190,18 @@ generatePolicy "resign-root-certificate" "{
 SERVICE_CHECKING_TOKEN_POLICIES='"resign-root-certificate"'
 for client in $($JQ_BIN -r -c '.[]' $PKI_CLIENTS_FILE); do
   name=$(echo "$client" | $JQ_BIN -r '.name')
-  generatePKIRole "$name" "$client"
-  # this token role allow to issue certificate
-  generateTokenRole "$name"
-  generatePolicy "$name" "{\"path\":{\"pki/issue/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
-  # generator to generate above token
-  generatePolicy "$name-generator" "{\"path\":{\"auth/token/create/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
-  SERVICE_CHECKING_TOKEN_POLICIES="$SERVICE_CHECKING_TOKEN_POLICIES,\"$name-generator\""
+
+  if [ "$name" = "null" ]; then
+    printStatus "Missing name of config $client"
+  else
+    generatePKIRole "$name" "$client"
+    # this token role allow to issue certificate
+    generateTokenRole "$name"
+    generatePolicy "$name" "{\"path\":{\"pki/issue/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
+    # generator to generate above token
+    generatePolicy "$name-generator" "{\"path\":{\"auth/token/create/$name\":{\"capabilities\":[\"create\",\"update\"]}}}"
+    SERVICE_CHECKING_TOKEN_POLICIES="$SERVICE_CHECKING_TOKEN_POLICIES,\"$name-generator\""
+  fi
 done
 
 # ======================== Generate Self-checking token ========================

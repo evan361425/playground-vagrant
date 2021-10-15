@@ -2,7 +2,6 @@
 class profile::vault_pki_root (
   Hash             $mount_setting,
   Hash             $pki_setting,
-  Hash             $pki_intermediate_policy,
   # optional
   Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
@@ -35,14 +34,6 @@ VAULT_API_ADDR=${lookup('profile::vault::api_addr')}"),
     owner   => 'vault',
     group   => 'vault',
     content => to_json($pki_setting),
-    require => Package['vault'],
-  }
-
-  file { '/etc/vault.d/pki-intermediate-policy.json':
-    ensure  => file,
-    owner   => 'vault',
-    group   => 'vault',
-    content => to_json($pki_intermediate_policy),
     require => Package['vault'],
   }
 
