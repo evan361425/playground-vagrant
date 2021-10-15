@@ -39,12 +39,12 @@ if [ "$TOKEN_NAME" = "token-$EXPECT_TOKEN_NAME" ]; then
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" > /dev/null
 
   >&2 echo " done"
-  
-  echo "$VAULT_TOKEN"
-elif [ "$TOKEN_NAME" != "null" ]; then
+elif [ -n "$TOKEN_NAME" ] && [ "$TOKEN_NAME" != "null" ]; then
   printStatus "Using $TOKEN_NAME token is not support"
   removeTokenInEnv
+  exit 1
 else
   printStatus "Not finding token"
   removeTokenInEnv
+  exit 1
 fi

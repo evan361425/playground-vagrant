@@ -74,7 +74,7 @@ shouldResignRootCert() {
   if openssl x509 -in "$PEM_CERT" -noout -checkend 60; then
     return 1;
   else
-    printStatus "Certificate is going to expired, start renew"
+    printf "Certificate is going to expired, start renew now... "
     return 0;
   fi
 }
@@ -104,11 +104,10 @@ signCSRByRoot() {
 
   CERT=$(cat "$PEM_CERT")
   if [ "$CERT" = "null" ] || [ -z "$CERT" ]; then
-    printStatus "Token cannot generate certificate"
+    echo "unauthorized"
     return 1;
   fi 
 
-  printStatus "Generate certificate from root PKI successfully"
   return 0
 }
 
@@ -120,7 +119,8 @@ setSignedCert() {
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/intermediate/set-signed \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "$DATA"
-  printStatus "Finish set intermediate PKI signed"
+
+  echo "done"
 }
 
 # Issue certificate by
@@ -150,8 +150,8 @@ generatePolicy() {
 }
 
 # ============================ Check and prepare env ===========================
-NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ -n "$NEW_TOKEN" ]; then
+
+if . /etc/vault.d/renew-token.sh; then
   shouldResignRootCert && signCSRByRoot && setSignedCert
 
   exit 0;

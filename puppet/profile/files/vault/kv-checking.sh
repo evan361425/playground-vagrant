@@ -21,11 +21,11 @@ printStatus() {
 
 mountKVIfNeed() {
   MOUNT_PATH=$($JQ_BIN -r '.path // "secret"' "$MOUNT_FILE")
-  PKI_RESULT=$($CURL_BIN -s "$VAULT_API_ADDR"/v1/sys/mounts \
+  RESULT=$($CURL_BIN -s "$VAULT_API_ADDR"/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN ".data.\"$MOUNT_PATH/\"")
 
-  if [ "$PKI_RESULT" = "null" ]; then
+  if [ "$RESULT" = "null" ]; then
     $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/sys/mounts/"$MOUNT_PATH" \
       -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
       -d "@$MOUNT_FILE" > /dev/null
@@ -70,8 +70,7 @@ generatePolicy() {
 }
 
 # ============================== Setup if needed ===============================
-NEW_TOKEN=$(. /etc/vault.d/renew-token.sh) || exit 1;
-if [ -n "$NEW_TOKEN" ]; then
+if . /etc/vault.d/renew-token.sh; then
   exit 0;
 fi
 
