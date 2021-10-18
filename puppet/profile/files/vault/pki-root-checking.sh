@@ -56,13 +56,13 @@ generatePolicy() {
 }
 
 # ============================ Check and prepare env ===========================
-if . /etc/vault.d/renew-token.sh; then
+if [ "$(. /etc/vault.d/renew-token.sh)" = 'success' ]; then
   exit 0;
 fi
 
 # Using recovery keys to generate root token
 if [ -z "$VAULT_ROOT_TOKEN" ]; then
-  VAULT_ROOT_TOKEN=$(. /etc/vault.d/generate-root-token.sh) || exit 1;
+  VAULT_ROOT_TOKEN=$(. /etc/vault.d/generate-root-token.sh);
 fi
 
 VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
