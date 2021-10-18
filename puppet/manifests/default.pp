@@ -5,44 +5,7 @@ $aws_region = 'ap-northeast-1';
 node 'vault-pki-root.example.com' {
   include apt
 
-  class { 'profile::vault':
-    enable_ui                => true,
-    http_proxy               => '',
-    https_proxy              => '',
-    hashicorp_apt_key_id     => $hashicorp_apt_key_id,
-    hashicorp_apt_key_server => $hashicorp_apt_key_server,
-    seal                     => {
-      awskms             => {
-        region     => $aws_region,
-        kms_key_id => lookup('kms_key_id'),
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    storage                  => {
-      dynamodb           => {
-        ha_enabled => true,
-        region     => $aws_region,
-        table      => 'evan-vault-pki-root',
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    listener                 => {
-      tcp                => {
-        address     => '0.0.0.0:8200',
-        tls_disable => 1
-      }
-    },
-    extra_config             =>{
-      service_registration => {
-        consul             => {
-          address => '0.0.0.0:8500',
-          service => 'vault-pki-root'
-        }
-      }
-    }
-  }
+  include profile::vault
 
   class { 'profile::vault_pki_root':
     root_token    => lookup('vault_pki_root_root_token'),
@@ -62,44 +25,8 @@ node 'vault-pki-root.example.com' {
 
 node 'vault-pki-int.example.com' {
   include apt
-  class { 'profile::vault':
-    enable_ui                => true,
-    http_proxy               => '',
-    https_proxy              => '',
-    hashicorp_apt_key_id     => $hashicorp_apt_key_id,
-    hashicorp_apt_key_server => $hashicorp_apt_key_server,
-    seal                     => {
-      awskms             => {
-        region     => $aws_region,
-        kms_key_id => lookup('kms_key_id'),
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    storage                  => {
-      dynamodb           => {
-        ha_enabled => true,
-        region     => $aws_region,
-        table      => 'evan-vault-pki-int',
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    listener                 => {
-      tcp                => {
-        address     => '0.0.0.0:8200',
-        tls_disable => 1
-      }
-    },
-    extra_config             => {
-      service_registration => {
-        consul             => {
-          address => '0.0.0.0:8500',
-          service => 'vault-pki-int'
-        }
-      }
-    }
-  }
+
+  include profile::vault
 
   class { 'profile::vault_pki_int':
     root_token        => lookup('vault_pki_int_root_token'),
@@ -137,37 +64,7 @@ node 'vault-pki-int.example.com' {
 node 'vault-kv.example.com' {
   include apt
 
-  class { 'profile::vault':
-    enable_ui                => true,
-    http_proxy               => '',
-    https_proxy              => '',
-    hashicorp_apt_key_id     => $hashicorp_apt_key_id,
-    hashicorp_apt_key_server => $hashicorp_apt_key_server,
-    seal                     => {
-      awskms             => {
-        region     => $aws_region,
-        kms_key_id => lookup('kms_key_id'),
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    storage                  => {
-      dynamodb           => {
-        ha_enabled => true,
-        region     => $aws_region,
-        table      => 'evan-vault-kv',
-        access_key => lookup('access_key'),
-        secret_key => lookup('secret_key'),
-      }
-    },
-    listener                 => {
-      tcp                => {
-        address     => '0.0.0.0:8200',
-        tls_disable => 1
-      }
-    },
-    extra_config             => {}
-  }
+  include profile::vault
 
   class { 'profile::vault_cert_generator' :
     cert_puppet_source_ctmpl => 'puppet:///modules/profile/consul_template/kv-cert.ctmpl',

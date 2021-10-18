@@ -1,1 +1,21 @@
 profile::vault::api_addr: "http://0.0.0.0:8200"
+profile::vault::enable_ui: true
+profile::vault::http_proxy: ""
+profile::vault::https_proxy: ""
+profile::vault::hashicorp_apt_key_id: "E8A032E094D8EB4EA189D270DA418C88A3219F7B"
+profile::vault::hashicorp_apt_key_server: "hkp://keyserver.ubuntu.com:80"
+profile::vault::seal:
+  awskms:
+    region: "ap-northeast-1"
+    kms_key_id: "%{lookup('kms_key_id')}"
+    access_key: "%{lookup('access_key')}"
+    secret_key: "%{lookup('secret_key')}"
+profile::vault::listener:
+  tcp:
+    address: "0.0.0.0:8200"
+    tls_disable: 1
+profile::vault::extra_config:
+  service_registration:
+    consul:
+      address: "0.0.0.0:8500"
+      service: "vault-pki-root"

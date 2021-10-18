@@ -5,6 +5,8 @@ hierarchy:
     path: secrets.yaml
   - name: Common
     path: common.yaml
+  - name: "Per-node data"
+    glob: "nodes/%{trusted.certname}.yaml"
 defaults:
   data_hash: yaml_data
   datadir: data

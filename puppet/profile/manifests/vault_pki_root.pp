@@ -2,11 +2,7 @@
 class profile::vault_pki_root (
   Hash             $mount_setting,
   Hash             $pki_setting,
-  # optional
-  Optional[String] $root_token = '',
-  Optional[String] $recovery_keys = '',
 ) {
-
   package { 'jq':
     ensure => installed,
   }
@@ -15,9 +11,7 @@ class profile::vault_pki_root (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
-VAULT_ROOT_TOKEN=${root_token}
-VAULT_API_ADDR=${lookup('profile::vault::api_addr')}"),
+    content => template('puppet:///modules/profile/vault/cron.env.erb'),
     require => Package['vault'],
   }
 

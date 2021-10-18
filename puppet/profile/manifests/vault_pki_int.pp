@@ -7,25 +7,23 @@ class profile::vault_pki_int (
   # optional
   Optional[String] $pki_root_token = '',
   Optional[String] $pki_cert_folder = '/etc/vault.d/certs',
-  Optional[String] $root_token = '',
-  Optional[String] $recovery_keys = '',
 ) {
-
   package { 'jq':
     ensure => installed,
+  }
+
+  $additional_env = {
+    'PKI_ROOT_API_ADDR' => $pki_root_api_addr,
+    'PKI_ROOT_TOKEN'    => $pki_root_token,
+    'PEM_CSR'           => "${pki_cert_folder}/INTERMEDIATE_CSR.pem",
+    'PEM_CERT'          => "${pki_cert_folder}/INTERMEDIATE_CERT.pem"
   }
 
   file { '/etc/vault.d/.cron.env':
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
-VAULT_API_ADDR=${lookup('profile::vault::api_addr')}
-VAULT_ROOT_TOKEN=${root_token}
-PKI_ROOT_API_ADDR=${pki_root_api_addr}
-PKI_ROOT_TOKEN=${pki_root_token}
-PEM_CSR=${pki_cert_folder}/INTERMEDIATE_CSR.pem
-PEM_CERT=${pki_cert_folder}/INTERMEDIATE_CERT.pem"),
+    content => template('puppet:///modules/profile/vault/cron.env.erb'),
     require => Package['vault'],
   }
 

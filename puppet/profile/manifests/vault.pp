@@ -5,15 +5,17 @@ class profile::vault (
   # encrypted
   Hash                       $seal,
   Hash                       $storage,
+  String                     $root_token,
   # common
+  String                     $api_addr,
   String                     $hashicorp_apt_key_id,
   String                     $hashicorp_apt_key_server,
   String                     $http_proxy,
   String                     $https_proxy,
   # Optional
   Optional[Hash]             $extra_config = {},
+  Optional[String]           $recovery_keys = '',
 ) {
-
   apt::key { 'vault-gpg-key-with-proxy':
     id      => $hashicorp_apt_key_id,
     server  => $hashicorp_apt_key_server,
@@ -31,7 +33,7 @@ class profile::vault (
   class { 'vault':
     install_method => 'repo',
     enable_ui      => $enable_ui,
-    api_addr       => lookup('profile::vault::api_addr'),
+    api_addr       => $api_addr,
     seal           => $seal,
     storage        => $storage,
     listener       => $listener,

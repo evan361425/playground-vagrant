@@ -9,20 +9,20 @@ class profile::vault_kv (
   Optional[String] $root_token = '',
   Optional[String] $recovery_keys = '',
 ) {
-
   package { 'jq':
     ensure => installed,
+  }
+
+  $additional_env = {
+    'MOUNT_FILE'  => $mount_file,
+    'POLICY_FILE' => $policy_file,
   }
 
   file { "/etc/vault.d/${cron_name}.env":
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("VAULT_RECOVERY_KEYS=${recovery_keys}
-VAULT_ROOT_TOKEN=${root_token}
-VAULT_API_ADDR=${lookup('profile::vault::api_addr')}
-MOUNT_FILE=${mount_file}
-POLICY_FILE=${policy_file}"),
+    content => template('puppet:///modules/profile/vault/cron.env.erb'),
     require => Package['vault'],
   }
 
