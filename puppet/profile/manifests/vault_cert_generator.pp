@@ -1,19 +1,15 @@
 # Use consul template for Vault
-class profile::vault_cert_generator (
-  String $cert_puppet_source_ctmpl,
-  String $key_puppet_source_ctmpl,
-  String $cert_source_ctmpl,
-  String $cert_destination,
-  String $key_source_ctmpl,
-  String $key_destination,
+class profile::vault::cert_generator (
+  String $cert_path,
+  String $cert_cn,
   String $vault_address,
   String $vault_token,
   # Optional
   Optional[String] $source_folder = '/etc/vault.d/tls',
   Optional[String] $log_file = '/var/log/vault/cert-generator.log',
   Optional[String] $consul_template_version = '0.27.0',
-  Optional[String] $https_proxy = '',
-  Optional[String] $http_proxy = '',
+  Optional[String] $http_proxy = "${lookup('profile::base::full_http_proxy')}",
+  Optional[String] $https_proxy = "${lookup('profile::base::full_https_proxy')}",
 ) {
   package { 'unzip':
     ensure => installed,
@@ -25,13 +21,16 @@ class profile::vault_cert_generator (
     path    => $::path
   } -> file { $source_folder : }
 
+  $cert_source_ctmpl = "${source_folder}/cert.ctmpl"
+  $key_source_ctmpl = "${source_folder}/key.ctmpl"
+
   file { $cert_source_ctmpl :
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    mode    => '0644',
-    source  => $cert_puppet_source_ctmpl,
-    path    => "${source_folder}/${cert_source_ctmpl}",
+    mode    => '0444',
+    source  => template('profile/vault/cert.ctmpl.erb'),
+    path    => $cert_source_ctmpl,
     require => File[$source_folder]
   }
 
@@ -39,9 +38,9 @@ class profile::vault_cert_generator (
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    mode    => '0644',
-    source  => $key_puppet_source_ctmpl,
-    path    => "${source_folder}/${key_source_ctmpl}",
+    mode    => '0444',
+    source  => template('profile/vault/key.ctmpl.erb'),
+    path    => $key_source_ctmpl,
     require => File[$source_folder]
   }
 
@@ -78,7 +77,7 @@ class profile::vault_cert_generator (
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${cert_source_ctmpl}",
-      destination => "${source_folder}/${cert_destination}",
+      destination => "${source_folder}/cert.pem",
       backup      => true,
       command     => "echo \"$(date +\"%F %T\") - Reload certificate\" >> ${log_file}",
     },
@@ -92,7 +91,7 @@ class profile::vault_cert_generator (
     config_hash => {
       perms       => '0644',
       source      => "${source_folder}/${key_source_ctmpl}",
-      destination => "${source_folder}/${key_destination}",
+      destination => "${source_folder}/key.pem",
       backup      => true,
       command     => "echo \"$(date +\"%F %T\") - Reload key\" >> ${log_file}",
     },

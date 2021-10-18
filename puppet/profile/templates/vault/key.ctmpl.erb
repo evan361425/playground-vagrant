@@ -1,0 +1,2 @@
+{{- with secret "pki/issue/<%= @cert_path %>" "common_name=<%= @cert_cn %>" -}}
+{{ .Data.private_key }}{{ end }}

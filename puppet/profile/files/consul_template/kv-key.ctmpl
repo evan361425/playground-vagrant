@@ -1,2 +1,0 @@
-{{- with secret "pki/issue/encrypt-service" "common_name=example.encrypt-service.com" -}}
-{{ .Data.private_key }}{{ end }}

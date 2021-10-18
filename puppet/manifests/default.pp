@@ -63,14 +63,10 @@ node 'vault-kv.example.com' {
   include profile::vault
 
   class { 'profile::vault_cert_generator' :
-    cert_puppet_source_ctmpl => 'puppet:///modules/profile/consul_template/kv-cert.ctmpl',
-    key_puppet_source_ctmpl  => 'puppet:///modules/profile/consul_template/kv-key.ctmpl',
-    cert_source_ctmpl        => 'cert.ctmpl',
-    cert_destination         => 'cert.pem',
-    key_source_ctmpl         => 'key.ctmpl',
-    key_destination          => 'key.pem',
-    vault_address            => 'http://vault-pki-int.example.com:8200',
-    vault_token              => lookup('vault_pki_int_root_token')
+    cert_path     => 'encrypt-service',
+    cert_cn       => 'example.encrypt-service.com',
+    vault_address => 'http://vault-pki-int.example.com:8200',
+    vault_token   => lookup('vault_pki_int_root_token')
   }
 
   class { 'profile::vault_kv':

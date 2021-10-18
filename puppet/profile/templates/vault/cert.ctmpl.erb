@@ -1,4 +1,4 @@
-{{- with secret "pki/issue/encrypt-service" "common_name=example.encrypt-service.com" -}}
+{{- with secret "pki/issue/<%= @cert_path %>" "common_name=<%= @cert_cn %>" -}}
 {{ .Data.certificate }}
 {{ range $index, $ca := .Data.ca_chain }}{{ $ca }}
 {{ end }}{{ end }}
