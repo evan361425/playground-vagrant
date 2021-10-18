@@ -5,3 +5,4 @@ profile::vault::storage:
     region: "ap-northeast-1"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
+profile::vault::root_token: "%{lookup('vault_pki_root_root_token')}"

@@ -11,7 +11,7 @@ class profile::vault_pki_root (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => template('puppet:///modules/profile/vault/cron.env.erb'),
+    content => template('profile/vault/cron.env.erb'),
     require => Package['vault'],
   }
 

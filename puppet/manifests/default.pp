@@ -8,8 +8,6 @@ node 'vault-pki-root.example.com' {
   include profile::vault
 
   class { 'profile::vault_pki_root':
-    root_token    => lookup('vault_pki_root_root_token'),
-    recovery_keys => lookup('vault_pki_root_recovery_keys'),
     mount_setting => {
       type   => 'pki',
       config => {
@@ -29,8 +27,6 @@ node 'vault-pki-int.example.com' {
   include profile::vault
 
   class { 'profile::vault_pki_int':
-    root_token        => lookup('vault_pki_int_root_token'),
-    recovery_keys     => lookup('vault_pki_int_recovery_keys'),
     mount_setting     => {
       type   => 'pki',
       config => {
@@ -78,8 +74,6 @@ node 'vault-kv.example.com' {
   }
 
   class { 'profile::vault_kv':
-    root_token     => lookup('vault_kv_root_token'),
-    recovery_keys  => lookup('vault_kv_recovery_keys'),
     mount_setting  => {
       type    => 'kv',
       path    => 'develop',
