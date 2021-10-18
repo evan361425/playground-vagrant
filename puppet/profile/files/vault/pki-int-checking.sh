@@ -44,13 +44,13 @@ mountPKIIfNeed() {
 shouldResignRootCert() {
   # If certificate file is empty or not found, renew cert
   if [ ! -f "$PEM_CERT" ] || [ ! -s "$PEM_CERT" ]; then
-    printStatus "Certificate not found"
+    printStatus "Certificate not found, start request now... "
     return 0;
   fi
 
   if [ -z "$PKI_ROOT_TOKEN" ]; then
     printStatus "Root-PKI's token not found"
-    return 0;
+    return 1;
   fi
 
   TOKEN_NAME=$($CURL_BIN -s "$PKI_ROOT_API_ADDR"/v1/auth/token/lookup-self \
@@ -58,15 +58,15 @@ shouldResignRootCert() {
     | $JQ_BIN -r '.data.display_name')
   if [ "$TOKEN_NAME" = "null" ] || [ -z "$TOKEN_NAME" ]; then
     printStatus "Wrong Root API Address $PKI_ROOT_API_ADDR or Wrong Token"
-    return 0;
+    return 1;
   fi
   # renew token
   $CURL_BIN -s -X POST "$PKI_ROOT_API_ADDR"/v1/auth/token/renew-self \
     -H "X-Vault-Token: $PKI_ROOT_TOKEN" -H "$CONTENT_TYPE_HEADER" > /dev/null
 
-  # If unparsable, exit
+  # If unparsable, request new one
   if ! openssl x509 -in "$PEM_CERT" > /dev/null 2>&1; then
-    printStatus "Certificate non-parsable"
+    printf "Certificate non-parsable, start request now... "
     return 0;
   fi
 
@@ -151,7 +151,7 @@ generatePolicy() {
 
 # ============================ Check and prepare env ===========================
 
-if . /etc/vault.d/renew-token.sh; then
+if [ "$(. /etc/vault.d/renew-token.sh)" = 'success' ]; then
   shouldResignRootCert && signCSRByRoot && setSignedCert
 
   exit 0;

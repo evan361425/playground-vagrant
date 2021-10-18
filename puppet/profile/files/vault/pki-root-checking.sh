@@ -62,7 +62,7 @@ fi
 
 # Using recovery keys to generate root token
 if [ -z "$VAULT_ROOT_TOKEN" ]; then
-  VAULT_ROOT_TOKEN=$(. /etc/vault.d/generate-root-token.sh);
+  VAULT_ROOT_TOKEN=$(. /etc/vault.d/generate-root-token.sh) || exit 1;
 fi
 
 VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"

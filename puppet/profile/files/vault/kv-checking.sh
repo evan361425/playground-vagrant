@@ -70,7 +70,7 @@ generatePolicy() {
 }
 
 # ============================== Setup if needed ===============================
-if . /etc/vault.d/renew-token.sh; then
+if [ "$(. /etc/vault.d/renew-token.sh)" = 'success' ]; then
   exit 0;
 fi
 

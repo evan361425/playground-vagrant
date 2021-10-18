@@ -1,5 +1,5 @@
 # Use consul template for Vault
-class profile::vault::cert_generator (
+class profile::vault_cert_generator (
   String $cert_path,
   String $cert_cn,
   String $vault_address,
@@ -8,8 +8,8 @@ class profile::vault::cert_generator (
   Optional[String] $source_folder = '/etc/vault.d/tls',
   Optional[String] $log_file = '/var/log/vault/cert-generator.log',
   Optional[String] $consul_template_version = '0.27.0',
-  Optional[String] $http_proxy = "${lookup('profile::base::full_http_proxy')}",
-  Optional[String] $https_proxy = "${lookup('profile::base::full_https_proxy')}",
+  Optional[String] $http_proxy = "${lookup('profile::vault::http_proxy')}",
+  Optional[String] $https_proxy = "${lookup('profile::vault::http_proxy')}",
 ) {
   package { 'unzip':
     ensure => installed,
@@ -29,8 +29,7 @@ class profile::vault::cert_generator (
     owner   => 'vault',
     group   => 'vault',
     mode    => '0444',
-    source  => template('profile/vault/cert.ctmpl.erb'),
-    path    => $cert_source_ctmpl,
+    content => template('profile/vault/cert.ctmpl.erb'),
     require => File[$source_folder]
   }
 
@@ -39,8 +38,7 @@ class profile::vault::cert_generator (
     owner   => 'vault',
     group   => 'vault',
     mode    => '0444',
-    source  => template('profile/vault/key.ctmpl.erb'),
-    path    => $key_source_ctmpl,
+    content => template('profile/vault/key.ctmpl.erb'),
     require => File[$source_folder]
   }
 
@@ -76,7 +74,7 @@ class profile::vault::cert_generator (
   consul_template::watch { 'vault_cert':
     config_hash => {
       perms       => '0644',
-      source      => "${source_folder}/${cert_source_ctmpl}",
+      source      => $cert_source_ctmpl,
       destination => "${source_folder}/cert.pem",
       backup      => true,
       command     => "echo \"$(date +\"%F %T\") - Reload certificate\" >> ${log_file}",
@@ -90,7 +88,7 @@ class profile::vault::cert_generator (
   consul_template::watch { 'vault_key':
     config_hash => {
       perms       => '0644',
-      source      => "${source_folder}/${key_source_ctmpl}",
+      source      => $key_source_ctmpl,
       destination => "${source_folder}/key.pem",
       backup      => true,
       command     => "echo \"$(date +\"%F %T\") - Reload key\" >> ${log_file}",

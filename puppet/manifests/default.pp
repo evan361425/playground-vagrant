@@ -11,12 +11,12 @@ node 'vault-pki-root.example.com' {
     mount_setting => {
       type   => 'pki',
       config => {
-        max_lease_ttl => '1d'
+        max_lease_ttl => '24h'
       }
     },
     pki_setting   => {
       common_name => 'Vault Root CA',
-      ttl         => '1d'
+      ttl         => '24h'
     },
   }
 }
@@ -66,7 +66,7 @@ node 'vault-kv.example.com' {
     cert_path     => 'encrypt-service',
     cert_cn       => 'example.encrypt-service.com',
     vault_address => 'http://vault-pki-int.example.com:8200',
-    vault_token   => lookup('vault_pki_int_root_token')
+    vault_token   => lookup('vault_pki_int_cert_token')
   }
 
   class { 'profile::vault_kv':
