@@ -6,3 +6,19 @@ profile::vault::storage:
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
 profile::vault::root_token: "%{lookup('vault_kv_root_token')}"
+# Cert Generator
+profile::vault::cert_generator::cert_path: "encrypt-service"
+profile::vault::cert_generator::cert_cn: "example.encrypt-service.com"
+profile::vault::cert_generator::vault_address: "http://vault-pki-int.example.com:8200"
+profile::vault::cert_generator::vault_token: "%{lookup('vault_pki_int_cert_token')}"
+# KV Secrets
+profile::vault::kv_secrets::mount_setting:
+  type: "kv"
+  path: "develop"
+  options:
+    version: "2"
+profile::vault::kv_secrets::policy_setting:
+  name: "develop-secret-reader-policy"
+  path:
+    "develop/*":
+      "capabilities": ["read"]

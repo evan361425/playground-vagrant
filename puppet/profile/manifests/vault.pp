@@ -16,6 +16,10 @@ class profile::vault (
   Optional[Hash]             $extra_config = {},
   Optional[String]           $recovery_keys = '',
 ) {
+  package { 'apt':
+    ensure => installed,
+  }
+
   apt::key { 'vault-gpg-key-with-proxy':
     id      => $hashicorp_apt_key_id,
     server  => $hashicorp_apt_key_server,

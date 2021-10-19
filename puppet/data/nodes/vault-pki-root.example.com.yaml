@@ -6,3 +6,11 @@ profile::vault::storage:
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
 profile::vault::root_token: "%{lookup('vault_pki_root_root_token')}"
+# PKI root
+profile::vault::pki_root::mount_setting:
+  type: "pki"
+  config:
+    max_lease_ttl: "24h"
+profile::vault::pki_root::pki_setting:
+  common_name: "Vault Root CA"
+  ttl: "24h"

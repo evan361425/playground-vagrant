@@ -6,3 +6,23 @@ profile::vault::storage:
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
 profile::vault::root_token: "%{lookup('vault_pki_int_root_token')}"
+# PKI int
+profile::vault::pki_root::mount_setting:
+  type: "pki"
+  config:
+    max_lease_ttl: "24h"
+profile::vault::pki_root::pki_setting:
+  common_name: "Vault Intermediate CA"
+  ttl: "930s"
+profile::vault::pki_root::pki_clients:
+  - name: "encrypt-service"
+    allowed_domains: "encrypt-service.com"
+    allow_subdomains: true,
+    allow_glob_domains: true,
+    max_ttl: "10m"
+    ttl: "8m"
+  - name: "encrypt-service-client"
+    allowed_domains: "encrypt-service-client.com"
+    max_ttl: "5m"
+    ttl: "3m"
+profile::vault::pki_root::pki_root_api_addr: "http://vault-pki-root.example.com:8200"
