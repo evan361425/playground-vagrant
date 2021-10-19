@@ -6,9 +6,15 @@ profile::vault::storage:
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
 profile::vault::root_token: "%{lookup('vault_kv_root_token')}"
+profile::vault::listener:
+  tcp:
+    address: "0.0.0.0:8200"
+    tls_cert_file: /etc/vault.d/tls/cert.pem
+    tls_key_file: /etc/vault.d/tls/key.pem
+    tls_require_and_verify_client_cert: true
 # Cert Generator
-profile::vault::cert_generator::cert_path: "encrypt-service"
-profile::vault::cert_generator::cert_cn: "example.encrypt-service.com"
+profile::vault::cert_generator::cert_path: "kv-secrets"
+profile::vault::cert_generator::cert_cn: "vault-kv.example.com"
 profile::vault::cert_generator::vault_address: "http://vault-pki-int.example.com:8200"
 profile::vault::cert_generator::vault_token: "%{lookup('vault_pki_int_cert_token')}"
 # KV Secrets

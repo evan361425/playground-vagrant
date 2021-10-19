@@ -1,0 +1,15 @@
+profile::vault_agent::server:
+  address: "http://vault-kv.example.com:8200"
+  # TLS
+  ca_cert: ""
+  ca_path: ""
+  client_cert: ""
+  client_key: ""
+  tls_skip_verify: 1
+  # Server name for SNI
+  # https://lichi-chen.medium.com/server-name-indication-sni-原理簡介-f85e075e1d75
+  tls_server_name:
+  retry:
+    # -1 disable retry
+    num_retries: 1
+profile::vault_agent::token_name: "vault-kv.token.txt"

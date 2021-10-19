@@ -15,14 +15,12 @@ profile::vault::pki_root::pki_setting:
   common_name: "Vault Intermediate CA"
   ttl: "930s"
 profile::vault::pki_root::pki_clients:
-  - name: "encrypt-service"
-    allowed_domains: "encrypt-service.com"
-    allow_subdomains: true,
-    allow_glob_domains: true,
+  - name: "kv-secrets"
+    allowed_domains: "vault-kv.example.com"
     max_ttl: "10m"
     ttl: "8m"
-  - name: "encrypt-service-client"
-    allowed_domains: "encrypt-service-client.com"
+  - name: "kv-client"
+    allowed_domains: "vault-client.example.com"
     max_ttl: "5m"
     ttl: "3m"
 profile::vault::pki_root::pki_root_api_addr: "http://vault-pki-root.example.com:8200"

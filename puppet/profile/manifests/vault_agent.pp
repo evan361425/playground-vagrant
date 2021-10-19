@@ -1,23 +1,18 @@
 # Sidecar for connecting to Vault server
 class profile::vault_agent (
-  String                     $role_id,
-  String                     $secret_id,
+  Hash  $server,
+  Array $sinks,
 ) {
-  file { '/etc/vault/.role-id-file':
-    ensure  => present,
-    owner   => 'vault',
-    group   => 'vault',
-    mode    => '0640',
-    content => inline_template($role_id),
-    require => Package['vault'],
+  file { '/etc/vault_agent':
+    ensure => directory,
+    owner  => 'vault',
+    group  => 'vault',
   }
 
-  file { '/etc/vault/.secret-id-file':
-    ensure  => present,
+  file { '/etc/vault_agent/sinks/':
+    ensure  => directory,
     owner   => 'vault',
     group   => 'vault',
-    mode    => '0640',
-    content => inline_template($secret_id),
-    require => Package['vault'],
+    require => File['/etc/vault_agent'],
   }
 }
