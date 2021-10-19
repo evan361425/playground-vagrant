@@ -1,5 +1,5 @@
 # Building root CA by Vault
-class profile::vault_pki_root (
+class profile::vault::pki_root (
   Hash             $mount_setting,
   Hash             $pki_setting,
 ) {

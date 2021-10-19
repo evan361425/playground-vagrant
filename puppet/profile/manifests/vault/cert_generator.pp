@@ -1,5 +1,5 @@
 # Use consul template for Vault
-class profile::vault_cert_generator (
+class profile::vault::cert_generator (
   String $cert_path,
   String $cert_cn,
   String $vault_address,

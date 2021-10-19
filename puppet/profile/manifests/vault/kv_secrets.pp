@@ -1,5 +1,5 @@
 # Vault key-value secret engine
-class profile::vault_kv (
+class profile::vault::kv_secrets (
   Hash             $mount_setting,
   Hash             $policy_setting,
   Optional[String] $cron_name = 'kv-secrets',

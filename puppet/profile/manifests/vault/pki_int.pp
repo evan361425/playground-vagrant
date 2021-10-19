@@ -1,5 +1,5 @@
 # Building intermediate CA by Vault
-class profile::vault_pki_int (
+class profile::vault::pki_int (
   Hash             $mount_setting,
   Hash             $pki_setting,
   Array            $pki_clients,

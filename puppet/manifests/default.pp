@@ -7,7 +7,7 @@ node 'vault-pki-root.example.com' {
 
   include profile::vault
 
-  class { 'profile::vault_pki_root':
+  class { 'profile::vault::pki_root':
     mount_setting => {
       type   => 'pki',
       config => {
@@ -26,7 +26,7 @@ node 'vault-pki-int.example.com' {
 
   include profile::vault
 
-  class { 'profile::vault_pki_int':
+  class { 'profile::vault::pki_int':
     mount_setting     => {
       type   => 'pki',
       config => {
@@ -62,14 +62,14 @@ node 'vault-kv.example.com' {
 
   include profile::vault
 
-  class { 'profile::vault_cert_generator' :
+  class { 'profile::vault::cert_generator' :
     cert_path     => 'encrypt-service',
     cert_cn       => 'example.encrypt-service.com',
     vault_address => 'http://vault-pki-int.example.com:8200',
     vault_token   => lookup('vault_pki_int_cert_token')
   }
 
-  class { 'profile::vault_kv':
+  class { 'profile::vault::kv_secrets':
     mount_setting  => {
       type    => 'kv',
       path    => 'develop',
