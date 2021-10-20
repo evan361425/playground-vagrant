@@ -1,3 +1,4 @@
+profile::vault::api_addr: "https://vault-kv.example.com:8200"
 profile::vault::storage:
   dynamodb:
     ha_enabled: true
@@ -9,9 +10,9 @@ profile::vault::root_token: "%{lookup('vault_kv_root_token')}"
 profile::vault::listener:
   tcp:
     address: "0.0.0.0:8200"
-    tls_cert_file: /etc/vault.d/tls/cert.pem
-    tls_key_file: /etc/vault.d/tls/key.pem
-    tls_require_and_verify_client_cert: true
+    tls_client_ca_file: /etc/vault.d/tls/ca.crt
+    tls_cert_file: /etc/vault.d/tls/chain.crt
+    tls_key_file: /etc/vault.d/tls/kv-secrets.key
 # Cert Generator
 profile::vault::cert_generator::cert_path: "kv-secrets"
 profile::vault::cert_generator::cert_cn: "vault-kv.example.com"

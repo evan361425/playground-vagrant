@@ -3,16 +3,13 @@ class profile::vault_agent (
   Hash  $server,
   Array $sinks,
 ) {
-  file { '/etc/vault_agent':
+  file { '/usr/local/share/ca-certificates/extra':
     ensure => directory,
-    owner  => 'vault',
-    group  => 'vault',
   }
 
-  file { '/etc/vault_agent/sinks/':
-    ensure  => directory,
-    owner   => 'vault',
-    group   => 'vault',
-    require => File['/etc/vault_agent'],
+  file { '/usr/local/share/ca-certificates/extra/vault-pki-root.crt':
+    ensure  => present,
+    content => '',
+    require => File['/usr/local/share/ca-certificates/extra'],
   }
 }

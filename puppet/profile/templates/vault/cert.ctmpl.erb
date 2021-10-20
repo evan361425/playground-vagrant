@@ -1,4 +1,28 @@
 {{- with secret "pki/issue/<%= @cert_path %>" "common_name=<%= @cert_cn %>" -}}
-{{ .Data.certificate }}
-{{ range $index, $ca := .Data.ca_chain }}{{ $ca }}
-{{ end }}{{ end }}
+  {{- if .Data.certificate -}}
+  {{- .Data.certificate | writeToFile "<%= @source_folder %>/chain.crt" "vault" "vault" "0644" "newline" -}}
+  {{- .Data.certificate }}
+  {{- end -}}
+  
+  {{- if .Data.ca_chain -}}
+  {{- range $key, $value := .Data.ca_chain -}}
+    {{- $value | writeToFile "<%= @source_folder %>/chain.crt" "vault" "vault" "0644" "append" -}}
+
+    {{- if eq $key 0 -}}
+      {{- $value | writeToFile "<%= @source_folder %>/ca.crt" "vault" "vault" "0644" "newline" -}}
+    {{- else -}}
+      {{- $value | writeToFile "<%= @source_folder %>/ca.crt" "vault" "vault" "0644" "append" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- end -}}
+
+  {{- if .Data.certificate -}}
+  {{- .Data.certificate | writeToFile "<%= @source_folder %>/<%= @cert_path %>.crt" "vault" "vault" "0644" -}}
+  {{- .Data.certificate }}
+  {{- end -}}
+
+  {{- if .Data.private_key -}}
+  {{- .Data.private_key | writeToFile "<%= @source_folder %>/<%= @cert_path %>.key" "vault" "vault" "0644" -}}
+  {{ .Data.private_key }}
+  {{- end -}}
+{{- end -}}

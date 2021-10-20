@@ -28,6 +28,10 @@ printStatus() {
   echo "$(date +"%F %T") - $1"
 }
 
+printProcess() {
+  printf "%s - %s... " "$(date +"%F %T")" "$1"
+}
+
 mountPKIIfNeed() {
   PKI_RESULT=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/sys/mounts \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
@@ -44,7 +48,7 @@ mountPKIIfNeed() {
 shouldResignRootCert() {
   # If certificate file is empty or not found, renew cert
   if [ ! -f "$PEM_CERT" ] || [ ! -s "$PEM_CERT" ]; then
-    printStatus "Certificate not found, start request now... "
+    printProcess "Certificate not found, start request now"
     return 0;
   fi
 
@@ -66,15 +70,15 @@ shouldResignRootCert() {
 
   # If unparsable, request new one
   if ! openssl x509 -in "$PEM_CERT" > /dev/null 2>&1; then
-    printf "Certificate non-parsable, start request now... "
+    printProcess "Certificate non-parsable, start request now"
     return 0;
   fi
 
-  # If not expired in next 60 seconds
-  if openssl x509 -in "$PEM_CERT" -noout -checkend 60; then
+  # If not expired in next 20 minutes (1200 s)
+  if openssl x509 -in "$PEM_CERT" -noout -checkend 1200; then
     return 1;
   else
-    printf "Certificate is going to expired, start renew now... "
+    printProcess "Certificate is going to expired, start renew now"
     return 0;
   fi
 }
@@ -86,8 +90,6 @@ generateCSR() {
     | $JQ_BIN -r '.data.csr' > "$PEM_CSR"
 
   printStatus "CSR generated"
-
-  return 0;
 }
 
 signCSRByRoot() {
@@ -168,7 +170,8 @@ VAULT_TOKEN_HEADER="X-Vault-Token: ${VAULT_ROOT_TOKEN}"
 mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
-shouldResignRootCert && generateCSR && signCSRByRoot && setSignedCert
+generateCSR
+shouldResignRootCert && signCSRByRoot && setSignedCert
 
 generatePolicy "resign-root-certificate" "{
   \"path\": {

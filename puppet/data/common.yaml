@@ -1,4 +1,3 @@
-profile::vault::api_addr: "http://0.0.0.0:8200"
 profile::vault::enable_ui: true
 profile::vault::http_proxy: ""
 profile::vault::https_proxy: ""
@@ -10,7 +9,3 @@ profile::vault::seal:
     kms_key_id: "%{lookup('kms_key_id')}"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
-profile::vault::listener:
-  tcp:
-    address: "0.0.0.0:8200"
-    tls_disable: 1

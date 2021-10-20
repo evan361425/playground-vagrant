@@ -7,7 +7,7 @@ class profile::vault::cert_generator (
   # Optional
   Optional[String] $source_folder = '/etc/vault.d/tls',
   Optional[String] $log_file = '/var/log/vault/cert-generator.log',
-  Optional[String] $consul_template_version = '0.27.0',
+  Optional[String] $consul_template_version = '0.27.1',
   Optional[String] $http_proxy = "${lookup('profile::vault::http_proxy')}",
   Optional[String] $https_proxy = "${lookup('profile::vault::http_proxy')}",
 ) {
@@ -22,7 +22,6 @@ class profile::vault::cert_generator (
   } -> file { $source_folder : }
 
   $cert_source_ctmpl = "${source_folder}/cert.ctmpl"
-  $key_source_ctmpl = "${source_folder}/key.ctmpl"
 
   file { $cert_source_ctmpl :
     ensure  => present,
@@ -30,15 +29,6 @@ class profile::vault::cert_generator (
     group   => 'vault',
     mode    => '0444',
     content => template('profile/vault/cert.ctmpl.erb'),
-    require => File[$source_folder]
-  }
-
-  file { $key_source_ctmpl :
-    ensure  => present,
-    owner   => 'vault',
-    group   => 'vault',
-    mode    => '0444',
-    content => template('profile/vault/key.ctmpl.erb'),
     require => File[$source_folder]
   }
 
@@ -55,8 +45,8 @@ class profile::vault::cert_generator (
     version       => $consul_template_version,
     config_dir    => '/etc/consul-template',
     pretty_config => true,
-    user          => 'vault',
-    group         => 'vault',
+    user          => 'root',
+    group         => 'root',
     config_hash   => {
       vault => {
         address     => $vault_address,
@@ -75,27 +65,13 @@ class profile::vault::cert_generator (
     config_hash => {
       perms       => '0644',
       source      => $cert_source_ctmpl,
-      destination => "${source_folder}/cert.pem",
+      destination => "${source_folder}/cert.ctmpl.result",
       backup      => true,
-      command     => "echo \"$(date +\"%F %T\") - Reload certificate\" >> ${log_file}",
+      command     => "pkill -SIGHUP vault && echo \"$(date +\"%F %T\") - Reload certificate\" >> ${log_file}",
     },
     require     => [
       File[$log_file],
       File[$cert_source_ctmpl],
-    ],
-  }
-
-  consul_template::watch { 'vault_key':
-    config_hash => {
-      perms       => '0644',
-      source      => $key_source_ctmpl,
-      destination => "${source_folder}/key.pem",
-      backup      => true,
-      command     => "echo \"$(date +\"%F %T\") - Reload key\" >> ${log_file}",
-    },
-    require     => [
-      File[$log_file],
-      File[$key_source_ctmpl]
     ],
   }
 }

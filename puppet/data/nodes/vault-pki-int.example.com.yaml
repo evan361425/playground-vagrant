@@ -1,3 +1,4 @@
+profile::vault::api_addr: "http://vault-pki-int.example.com:8200"
 profile::vault::storage:
   dynamodb:
     ha_enabled: true
@@ -6,21 +7,26 @@ profile::vault::storage:
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
 profile::vault::root_token: "%{lookup('vault_pki_int_root_token')}"
+profile::vault::listener:
+  tcp:
+    address: "0.0.0.0:8200"
+    tls_disable: 1
 # PKI int
-profile::vault::pki_root::mount_setting:
+profile::vault::pki_int::mount_setting:
   type: "pki"
   config:
-    max_lease_ttl: "24h"
-profile::vault::pki_root::pki_setting:
+    max_lease_ttl: "8640h"
+profile::vault::pki_int::pki_setting:
   common_name: "Vault Intermediate CA"
-  ttl: "930s"
-profile::vault::pki_root::pki_clients:
+  ttl: "30m"
+profile::vault::pki_int::pki_clients:
   - name: "kv-secrets"
     allowed_domains: "vault-kv.example.com"
-    max_ttl: "10m"
-    ttl: "8m"
+    # specify for the allowed domain
+    allow_bare_domains: true
+    ttl: "10m"
   - name: "kv-client"
     allowed_domains: "vault-client.example.com"
-    max_ttl: "5m"
-    ttl: "3m"
-profile::vault::pki_root::pki_root_api_addr: "http://vault-pki-root.example.com:8200"
+    allow_bare_domains: true
+    ttl: "5m"
+profile::vault::pki_int::pki_root_api_addr: "http://vault-pki-root.example.com:8200"

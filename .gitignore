@@ -23,3 +23,4 @@ spec/fixtures/manifests/
 spec/fixtures/modules/
 tmp/
 vendor/
+root.crt
