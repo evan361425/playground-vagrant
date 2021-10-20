@@ -45,9 +45,6 @@ generateClientRole() {
   "path": {
     "auth/token/create/%s": {
       "capabilities": ["create", "update"]
-    },
-    "auth/token/renew-self": {
-      "capabilities": ["create", "update"]
     }
   }
 }' "$CRON_NAME")
