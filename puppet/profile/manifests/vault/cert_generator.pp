@@ -9,7 +9,7 @@ class profile::vault::cert_generator (
   Optional[String] $log_file = '/var/log/vault/cert-generator.log',
   Optional[String] $consul_template_version = '0.27.1',
   Optional[String] $http_proxy = "${lookup('profile::vault::http_proxy')}",
-  Optional[String] $https_proxy = "${lookup('profile::vault::http_proxy')}",
+  Optional[String] $https_proxy = "${lookup('profile::vault::https_proxy')}",
 ) {
   package { 'unzip':
     ensure => installed,

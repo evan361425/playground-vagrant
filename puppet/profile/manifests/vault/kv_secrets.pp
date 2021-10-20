@@ -6,8 +6,6 @@ class profile::vault::kv_secrets (
   Optional[String] $mount_file = '/etc/vault.d/mount-kv-setting.json',
   Optional[String] $policy_file = '/etc/vault.d/kv-policy.json',
   Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
-  Optional[String] $root_token = '',
-  Optional[String] $recovery_keys = '',
 ) {
   package { 'jq':
     ensure => installed,
