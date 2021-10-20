@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
 
+if [ -z "$VAULT_RECOVERY_KEYS" ]; then
+  exit 1
+fi
+
 startAttempt()
 {
   $CURL_BIN -s -X PUT "$VAULT_API_ADDR"/v1/sys/generate-root/attempt
