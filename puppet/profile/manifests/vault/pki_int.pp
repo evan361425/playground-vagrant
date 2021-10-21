@@ -7,19 +7,24 @@ class profile::vault::pki_int (
   # optional
   Optional[String] $pki_root_token = '',
   Optional[String] $pki_cert_folder = '/etc/vault.d/certs',
+  Optional[String] $cron_name = 'pki-int-checking',
+  Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
 ) {
-  package { 'jq':
-    ensure => installed,
+  file { "/etc/vault.d/${cron_name}.token.env":
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    require => Package['vault'],
   }
 
   $additional_env = {
     'PKI_ROOT_API_ADDR' => $pki_root_api_addr,
     'PKI_ROOT_TOKEN'    => $pki_root_token,
-    'PEM_CSR'           => "${pki_cert_folder}/INTERMEDIATE_CSR.pem",
-    'PEM_CERT'          => "${pki_cert_folder}/INTERMEDIATE_CERT.pem"
+    'PEM_CSR'           => "${pki_cert_folder}/csr.pem",
+    'PEM_CERT'          => "${pki_cert_folder}/cert.pem"
   }
 
-  file { '/etc/vault.d/.cron.env':
+  file { "/etc/vault.d/${cron_name}.env":
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -58,7 +63,7 @@ class profile::vault::pki_int (
     require => Package['vault'],
   }
 
-  file { "${pki_cert_folder}/INTERMEDIATE_CSR.pem":
+  file { $additional_env['PEM_CSR']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -66,7 +71,7 @@ class profile::vault::pki_int (
     require => File[$pki_cert_folder],
   }
 
-  file { "${pki_cert_folder}/INTERMEDIATE_CERT.pem":
+  file { additional_env['PEM_CERT']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -80,14 +85,11 @@ class profile::vault::pki_int (
     group   => 'vault',
     mode    => '0755',
     source  => 'puppet:///modules/profile/vault/pki-int-checking.sh',
-    path    => '/etc/vault.d/pki-int-checking.sh',
-    require => [
-      Package['vault'],
-      Package['jq'],
-    ],
+    path    => "/etc/vault.d/${cron_name}.sh",
+    require => Package['vault'],
   }
 
-  file { '/var/log/vault/pki-checking.log':
+  file { $log_file:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -95,15 +97,15 @@ class profile::vault::pki_int (
     require => Package['vault'],
   }
 
-  cron { 'pki-checking':
-    provider => 'crontab',
-    command  => '/etc/vault.d/pki-int-checking.sh >> /var/log/vault/pki-checking.log 2>&1',
-    user     => 'vault',
-    minute   => '*/15',
-    require  => [
-      File['/etc/vault.d/.cron.env'],
+  cron { $cron_name:
+    provider    => 'crontab',
+    environment => "CRON_NAME=${cron_name}",
+    command     => "/etc/vault.d/${cron_name}.sh >> ${log_file} 2>&1",
+    user        => 'vault',
+    minute      => '*/15',
+    require     => [
+      File[$log_file],
       File['pki-checking-scipt'],
-      File['/var/log/vault/pki-checking.log'],
     ],
   }
 }

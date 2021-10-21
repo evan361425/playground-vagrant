@@ -20,6 +20,10 @@ class profile::vault (
     ensure => installed,
   }
 
+  package { 'jq':
+    ensure => installed,
+  }
+
   apt::key { 'vault-gpg-key-with-proxy':
     id      => $hashicorp_apt_key_id,
     server  => $hashicorp_apt_key_server,

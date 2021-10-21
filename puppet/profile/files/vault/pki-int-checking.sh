@@ -1,15 +1,14 @@
 #!/usr/bin/env sh
 
 # Prepared env
-# - VAULT_API_ADDR          - required
-# - VAULT_TOKEN             - required if VAULT_RECOVERY_KEYS not set
-# - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
-# - PKI_ROOT_API_ADDR       - needed when renew certificate
-# - PKI_ROOT_TOKEN          - needed when renew certificate
-# - PEM_CSR                 - location of CSR
-# - PEM_CERT                - location of certificate
+# - PKI_ROOT_API_ADDR - needed when renew certificate
+# - PKI_ROOT_TOKEN    - needed when renew certificate
+# - PEM_CSR           - location of CSR
+# - PEM_CERT          - location of certificate
 # shellcheck source=/dev/null
-. /etc/vault.d/.cron.env
+. "/etc/vault.d/$CRON_NAME.env"
+# shellcheck source=/dev/null
+. "/etc/vault.d/$CRON_NAME.token.env"
 
 # Needed files when initializing
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
@@ -211,7 +210,7 @@ done
 printStatus "Generate service checking token"
 SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  -d "{\"display_name\":\"service-checking\",\"ttl\":\"1h\",\"policies\":[$SERVICE_CHECKING_TOKEN_POLICIES]}" \
+  -d "{\"display_name\":\"$CRON_NAME-checking\",\"ttl\":\"1h\",\"policies\":[$SERVICE_CHECKING_TOKEN_POLICIES]}" \
   | ${JQ_BIN} -r '.auth.client_token')
 
-printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
+echo "VAULT_TOKEN=$SERVICE_CHECKING_TOKEN" > "/etc/vault.d/$CRON_NAME.token.env"

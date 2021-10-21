@@ -1,15 +1,14 @@
 #!/usr/bin/env sh
 
-EXPECT_TOKEN_NAME="${CRON_NAME:-service-checking}"
-ENV_NAME="${CRON_NAME:-.cron}"
+CRON_NAME="${CRON_NAME:-vault}"
 
 printStatus() {
   >&2 echo "$(date +"%F %T") - $1"
 }
 
 removeTokenInEnv() {
-  sed '/VAULT_TOKEN/d' "/etc/vault.d/$ENV_NAME.env" > /etc/vault.d/.temp
-  sed '/^$/d' /etc/vault.d/.temp > "/etc/vault.d/$ENV_NAME.env"
+  sed '/VAULT_TOKEN/d' "/etc/vault.d/$CRON_NAME.token.env" > /etc/vault.d/.temp
+  sed '/^$/d' /etc/vault.d/.temp > "/etc/vault.d/$CRON_NAME.token.env"
   rm /etc/vault.d/.temp
 }
 
@@ -32,7 +31,7 @@ fi
 TOKEN_NAME=$($CURL_BIN -s -X GET "$VAULT_API_ADDR"/v1/auth/token/lookup-self \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   | $JQ_BIN -r '.data.display_name')
-if [ "$TOKEN_NAME" = "token-$EXPECT_TOKEN_NAME" ]; then
+if [ "$TOKEN_NAME" = "token-$CRON_NAME-checking" ]; then
   >&2 printf "%s - Using wanted token, start renew token..." "$(date +"%F %T")"
 
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/renew-self \

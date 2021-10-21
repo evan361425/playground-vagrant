@@ -1,13 +1,12 @@
 #!/usr/bin/env sh
 
 # Prepared env
-# - VAULT_API_ADDR          - required
-# - VAULT_TOKEN             - required if VAULT_RECOVERY_KEYS not set
-# - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
-# - MOUNT_FILE              - file name of mounting kv secret engine
-# - POLICY_FILE             - file name of kv secret engine client policy
+# - MOUNT_FILE  - file name of mounting kv secret engine
+# - POLICY_FILE - file name of kv secret engine client policy
 # shellcheck source=/dev/null
 . "/etc/vault.d/$CRON_NAME.env"
+# shellcheck source=/dev/null
+. "/etc/vault.d/$CRON_NAME.token.env"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
@@ -84,10 +83,10 @@ generatePolicy
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
-DATA=$(printf '{"display_name":"%s","ttl":"1h","policies":["default","%s-generator"]}' "$CRON_NAME" "$CRON_NAME")
+DATA=$(printf '{"display_name":"%s-checking","ttl":"1h","policies":["default","%s-generator"]}' "$CRON_NAME" "$CRON_NAME")
 SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
   -d "$DATA" \
   | ${JQ_BIN} -r '.auth.client_token')
 
-printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> "/etc/vault.d/$CRON_NAME.env"
+echo "VAULT_TOKEN=$SERVICE_CHECKING_TOKEN" > "/etc/vault.d/$CRON_NAME.token.env"

@@ -1,11 +1,9 @@
 #!/usr/bin/env sh
 
-# Prepared env
-# - VAULT_API_ADDR          - required
-# - VAULT_TOKEN             - required if VAULT_RECOVERY_KEYS not set
-# - VAULT_RECOVERY_KEYS     - required if VAULT_TOKEN not set, it will generate VAULT_TOKEN
 # shellcheck source=/dev/null
-. /etc/vault.d/.cron.env
+. "/etc/vault.d/$CRON_NAME.env"
+# shellcheck source=/dev/null
+. "/etc/vault.d/$CRON_NAME.token.env"
 
 # Needed files when initializing
 MOUNT_SETTING="/etc/vault.d/mount-setting.json"
@@ -34,17 +32,17 @@ mountPKIIfNeed() {
 }
 
 generateCert() {
+  RESULT=$($CURL_BIN -s "$VAULT_API_ADDR"/v1/pki/ca/pem)
+
+  if [ -n "$RESULT" ] && [ ! "$RESULT" = 'null' ]; then
+    return 0;
+  fi
+
   printStatus "Generate certificate"
   $CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/pki/root/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
     | $JQ_BIN '.data' > /etc/vault.d/CERTIFICATE.pem
-}
-
-generateTokenRole() {
-  $CURL_BIN -s -X POST "$VAULT_API_ADDR/v1/auth/token/roles/$1" \
-    -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-    -d "{\"allowed_policies\":[\"$1\"]}"
 }
 
 generatePolicy() {
@@ -72,15 +70,15 @@ mountPKIIfNeed
 
 # ============================= Generate Artifact ==============================
 generateCert
-generateTokenRole "pki-intermediate"
 generatePolicy "pki-intermediate" '{"path":{"pki/root/sign-intermediate":{"capabilities":["create","update"]}}}'
-generatePolicy "pki-intermediate-generator" '{"path":{"auth/token/create/pki-intermediate":{"capabilities":["create","update"]}}}'
+# curl -X POST localhost:8200/v1/auth/token/create-orphan -d '{"ttl":"72h","no_parent":true,"policies":"pki-intermediate"}' -H "X-Vault-Token: " 
+generatePolicy "pki-intermediate-generator" '{"path":{"auth/token/create-orphan":{"capabilities":["create","update","sudo"]}}}'
 
 # ======================== Generate Self-checking token ========================
 printStatus "Generate service checking token"
-SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create \
+SERVICE_CHECKING_TOKEN=$($CURL_BIN -s -X POST "$VAULT_API_ADDR"/v1/auth/token/create-orphan \
   -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
-  -d '{"display_name":"service-checking","ttl":"1h","policies":["pki-intermediate-generator"]}' \
+  -d "{\"display_name\":\"$CRON_NAME-checking\",\"ttl\":\"1h\",\"policies\":[\"pki-intermediate-generator\"]}" \
   | ${JQ_BIN} -r '.auth.client_token')
 
-printf "\nVAULT_TOKEN=%s" "$SERVICE_CHECKING_TOKEN" >> /etc/vault.d/.cron.env
+echo "VAULT_TOKEN=$SERVICE_CHECKING_TOKEN" > "/etc/vault.d/$CRON_NAME.token.env"

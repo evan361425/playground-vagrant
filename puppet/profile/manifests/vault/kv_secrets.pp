@@ -7,8 +7,11 @@ class profile::vault::kv_secrets (
   Optional[String] $policy_file = '/etc/vault.d/kv-policy.json',
   Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
 ) {
-  package { 'jq':
-    ensure => installed,
+  file { "/etc/vault.d/${cron_name}.token.env":
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    require => Package['vault'],
   }
 
   $additional_env = {

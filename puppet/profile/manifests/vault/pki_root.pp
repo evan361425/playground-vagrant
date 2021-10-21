@@ -2,12 +2,17 @@
 class profile::vault::pki_root (
   Hash             $mount_setting,
   Hash             $pki_setting,
+  Optional[String] $cron_name = 'pki-root-checking',
+  Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
 ) {
-  package { 'jq':
-    ensure => installed,
+  file { "/etc/vault.d/${cron_name}.token.env":
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    require => Package['vault'],
   }
 
-  file { '/etc/vault.d/.cron.env':
+  file { "/etc/vault.d/${cron_name}.env":
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -37,14 +42,11 @@ class profile::vault::pki_root (
     group   => 'vault',
     mode    => '0755',
     source  => 'puppet:///modules/profile/vault/pki-root-checking.sh',
-    path    => '/etc/vault.d/pki-root-checking.sh',
-    require => [
-      Package['vault'],
-      Package['jq'],
-    ],
+    path    => "/etc/vault.d/${cron_name}.sh",
+    require => Package['vault'],
   }
 
-  file { '/var/log/vault/pki-checking.log':
+  file { $log_file:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
@@ -52,15 +54,15 @@ class profile::vault::pki_root (
     require => Package['vault'],
   }
 
-  cron { 'pki-checking':
-    provider => 'crontab',
-    command  => '/etc/vault.d/pki-root-checking.sh >> /var/log/vault/pki-checking.log 2>&1',
-    user     => 'vault',
-    minute   => '*/15',
-    require  => [
-      File['/etc/vault.d/.cron.env'],
+  cron { $cron_name:
+    provider    => 'crontab',
+    environment => "CRON_NAME=${cron_name}",
+    command     => "/etc/vault.d/${cron_name}.sh >> ${log_file} 2>&1",
+    user        => 'vault',
+    minute      => '*/15',
+    require     => [
+      File[$log_file],
       File['pki-checking-scipt'],
-      File['/var/log/vault/pki-checking.log'],
     ],
   }
 }
