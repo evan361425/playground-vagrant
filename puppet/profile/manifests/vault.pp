@@ -1,4 +1,4 @@
-# AES Vault server
+# Vault base profile
 class profile::vault (
   Boolean                    $enable_ui,
   Variant[Hash, Array[Hash]] $listener,
@@ -13,17 +13,12 @@ class profile::vault (
   String                     $http_proxy,
   String                     $https_proxy,
   # Optional
+  Optional[Boolean]          $disable_audit = false,
+  Optional[String]           $audit_path = 'log',
+  Optional[String]           $audit_prefix = '',
   Optional[Hash]             $extra_config = {},
-  Optional[String]           $recovery_keys = '',
+  Optional[Array[String]]    $extra_scripts = [],
 ) {
-  package { 'apt':
-    ensure => installed,
-  }
-
-  package { 'jq':
-    ensure => installed,
-  }
-
   apt::key { 'vault-gpg-key-with-proxy':
     id      => $hashicorp_apt_key_id,
     server  => $hashicorp_apt_key_server,
@@ -80,28 +75,67 @@ class profile::vault (
     notify  => Service['vault'],
   }
 
+  file { '/etc/vault.d/scripts':
+    ensure  => directory,
+    owner   => 'vault',
+    group   => 'vault',
+    require => Package['vault'],
+  }
+
+  file { 'initialize-scipt':
+    ensure => present,
+    owner  => 'vault',
+    group  => 'vault',
+    mode   => '0755',
+    source => 'puppet:///modules/profile/vault/initialize.sh',
+    path   => '/etc/vault.d/scripts/initialize.sh',
+  }
+
   file { 'renew-token-scipt':
     ensure => present,
     owner  => 'vault',
     group  => 'vault',
     mode   => '0755',
     source => 'puppet:///modules/profile/vault/renew-token.sh',
-    path   => '/etc/vault.d/renew-token.sh',
-  }
-
-  file { 'generate-root-token-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/generate-root-token.sh',
-    path   => '/etc/vault.d/generate-root-token.sh',
+    path   => '/etc/vault.d/scripts/renew-token.sh',
   }
 
   file { '/var/log/vault':
     ensure  => directory,
     owner   => 'vault',
     group   => 'vault',
+    require => Package['vault'],
+  }
+
+  if ($disable_audit) {
+    $audit_setting = ''
+  } else {
+    $audit_setting = to_json({
+      type    => 'file',
+      options => {
+        file_path => "/var/log/vault/${audit_path}",
+        prefix    => $audit_prefix
+      }
+    })
+  }
+
+  file { 'audit-setting':
+    ensure  => present,
+    owner   => 'vault',
+    group   => 'vault',
+    mode    => '0444',
+    content => $audit_setting,
+    path    => '/etc/vault.d/audit-setting.json',
+    require => Package['vault'],
+  }
+
+  file { 'extra-scripts':
+    ensure  => present,
+    owner   => 'vault',
+    group   => 'vault',
+    mode    => '0444',
+    content => to_json($extra_scripts),
+    path    => '/etc/vault.d/extra-scripts.json',
     require => Package['vault'],
   }
 }
