@@ -1,10 +1,17 @@
 #!/usr/bin/env sh
 
-MOUNT_SETTING="/etc/vault.d/pki-root/mount-setting.json"
-PKI_SETTING="/etc/vault.d/pki-root/pki-setting.json"
+# - MOUNT_SETTING
+# - PKI_SETTING
+# shellcheck source=/dev/null
+. "/etc/vault.d/pki-root/.env"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
+
+if [ -z "$VAULT_TOKEN" ]; then
+  echo "Vault token (VAULT_TOKEN) not set"
+  exit 1;
+fi
 
 VAULT_TOKEN_HEADER="X-Vault-Token: $VAULT_TOKEN"
 CONTENT_TYPE_HEADER="Content-Type: application/json"
@@ -35,7 +42,7 @@ generateCertIfEmpty() {
   $CURL_BIN -s -X POST "$VAULT_ADDR"/v1/pki/root/generate/internal \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     -d "@$PKI_SETTING" \
-    | $JQ_BIN '.data' > /etc/vault.d/pki-root/certificate.pem
+    | $JQ_BIN '.data.certificate' > /etc/vault.d/pki-root/certificate.pem
   echo 'done'
 }
 

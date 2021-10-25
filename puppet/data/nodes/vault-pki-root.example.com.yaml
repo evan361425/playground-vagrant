@@ -6,7 +6,8 @@ profile::vault::storage:
     region: "ap-northeast-1"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
-profile::vault::root_token: "%{lookup('vault_pki_root_root_token')}"
+profile::vault::extra_scripts:
+  - "pki-root/initialize"
 profile::vault::listener:
   tcp:
     address: "0.0.0.0:8200"

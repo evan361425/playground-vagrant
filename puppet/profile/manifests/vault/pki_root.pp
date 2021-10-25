@@ -2,67 +2,61 @@
 class profile::vault::pki_root (
   Hash             $mount_setting,
   Hash             $pki_setting,
-  Optional[String] $cron_name = 'pki-root-checking',
-  Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
+  Optional[String] $directory = '/etc/vault.d/pki-root',
 ) {
-  file { "/etc/vault.d/${cron_name}.token.env":
-    ensure  => file,
+  file { $directory:
+    ensure  => directory,
     owner   => 'vault',
     group   => 'vault',
     require => Package['vault'],
   }
 
-  file { "/etc/vault.d/${cron_name}.env":
+  $additional_env = {
+    'MOUNT_SETTING' => "${directory}/mount-setting.pem",
+    'PKI_SETTING'   => "${directory}/pki-setting.pem",
+  }
+
+  file { "${directory}/.env":
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => template('profile/vault/cron.env.erb'),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { '/etc/vault.d/mount-setting.json':
+  file { $additional_env['MOUNT_SETTING']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => to_json($mount_setting),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { '/etc/vault.d/pki-setting.json':
+  file { $additional_env['PKI_SETTING']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => to_json($pki_setting),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { 'pki-checking-scipt':
+  file { "${directory}/initialize.sh":
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/pki-root-checking.sh',
-    path    => "/etc/vault.d/${cron_name}.sh",
-    require => Package['vault'],
+    source  => 'puppet:///modules/profile/vault/pki-root/initialize.sh',
+    path    => "${directory}/initialize.sh",
+    require => File[$directory],
   }
 
-  file { $log_file:
-    ensure  => file,
+  file { "${directory}/generate-token.sh":
+    ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    mode    => '0644',
-    require => Package['vault'],
-  }
-
-  cron { $cron_name:
-    provider    => 'crontab',
-    environment => "CRON_NAME=${cron_name}",
-    command     => "/etc/vault.d/${cron_name}.sh >> ${log_file} 2>&1",
-    user        => 'vault',
-    minute      => '*/15',
-    require     => [
-      File[$log_file],
-      File['pki-checking-scipt'],
-    ],
+    mode    => '0755',
+    source  => 'puppet:///modules/profile/vault/pki-root/generate-token.sh',
+    path    => "${directory}/generate-token.sh",
+    require => File[$directory],
   }
 }

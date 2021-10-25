@@ -1,81 +1,72 @@
 # Vault key-value secret engine
 class profile::vault::kv_secrets (
-  Hash             $mount_setting,
-  Hash             $policy_setting,
-  Optional[String] $cron_name = 'kv-secrets',
-  Optional[String] $mount_file = '/etc/vault.d/mount-kv-setting.json',
-  Optional[String] $policy_file = '/etc/vault.d/kv-policy.json',
-  Optional[String] $log_file = "/var/log/vault/${cron_name}.log",
+  Array[Hash]      $mount_setting,
+  Array[Hash]      $policy_setting,
+  Array[Hash]      $client_setting,
+  Optional[String] $directory = '/etc/vault.d/kv-secrets',
 ) {
-  file { "/etc/vault.d/${cron_name}.token.env":
-    ensure  => file,
+  file { $directory:
+    ensure  => directory,
     owner   => 'vault',
     group   => 'vault',
     require => Package['vault'],
   }
 
   $additional_env = {
-    'MOUNT_FILE'  => $mount_file,
-    'POLICY_FILE' => $policy_file,
+    'MOUNT_SETTING'  => "${directory}/mount-setting.json",
+    'POLICY_SETTING' => "${directory}/policy-setting.json",
+    'CLIENT_SETTING' => "${directory}/client-setting.json",
   }
 
-  file { "/etc/vault.d/${cron_name}.env":
-    ensure  => present,
+  file { "${directory}/.env":
+    ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => template('profile/vault/cron.env.erb'),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { $mount_file:
+  file { $additional_env['MOUNT_SETTING']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => to_json($mount_setting),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { $policy_file:
+  file { $additional_env['POLICY_SETTING']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
     content => to_json($policy_setting),
-    require => Package['vault'],
+    require => File[$directory],
   }
 
-  file { 'kv-checking-scipt':
+  file { $additional_env['CLIENT_SETTING']:
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    content => to_json($client_setting),
+    require => File[$directory],
+  }
+
+  file { "${directory}/initialize.sh":
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/kv-checking.sh',
-    path    => '/etc/vault.d/kv-checking.sh',
-    require => [
-      Package['vault'],
-      Package['jq'],
-    ],
+    source  => 'puppet:///modules/profile/vault/kv-secrets/initialize.sh',
+    path    => "${directory}/initialize.sh",
+    require => File[$directory],
   }
 
-  file { $log_file:
+  file { "${directory}/generate-tokens.sh":
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    mode    => '0644',
-    require => Package['vault'],
-  }
-
-  cron { $cron_name:
-    provider    => 'crontab',
-    environment => "CRON_NAME=${cron_name}",
-    command     => "/etc/vault.d/kv-checking.sh >> ${log_file} 2>&1",
-    user        => 'vault',
-    minute      => '*/15',
-    require     => [
-      File["/etc/vault.d/${cron_name}.env"],
-      File['kv-checking-scipt'],
-      File[$log_file],
-      File[$mount_file],
-      File[$policy_file],
-    ],
+    mode    => '0755',
+    source  => 'puppet:///modules/profile/vault/kv-secrets/generate-tokens.sh',
+    path    => "${directory}/generate-tokens.sh",
+    require => File[$directory],
   }
 }

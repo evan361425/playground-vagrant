@@ -5,7 +5,6 @@ class profile::vault (
   # encrypted
   Hash                       $seal,
   Hash                       $storage,
-  String                     $root_token,
   # common
   String                     $api_addr,
   String                     $hashicorp_apt_key_id,
@@ -13,6 +12,7 @@ class profile::vault (
   String                     $http_proxy,
   String                     $https_proxy,
   # Optional
+  Optional[String]           $max_lease_ttl = '768h',
   Optional[Boolean]          $disable_audit = false,
   Optional[String]           $audit_path = 'log',
   Optional[String]           $audit_prefix = '',
@@ -40,6 +40,7 @@ class profile::vault (
     seal           => $seal,
     storage        => $storage,
     listener       => $listener,
+    max_lease_ttl  => $max_lease_ttl,
     extra_config   => $extra_config,
   }
 
@@ -47,7 +48,7 @@ class profile::vault (
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
-    content => inline_template("http_proxy=${http_proxy}\nhttps_proxy=${https_proxy}"),
+    content => inline_template("http_proxy=${http_proxy}\nhttps_proxy=${https_proxy}\nVAULT_ADDR=${api_addr}"),
     require => Package['vault'],
   }
 
@@ -75,29 +76,13 @@ class profile::vault (
     notify  => Service['vault'],
   }
 
-  file { '/etc/vault.d/scripts':
-    ensure  => directory,
-    owner   => 'vault',
-    group   => 'vault',
-    require => Package['vault'],
-  }
-
-  file { 'initialize-scipt':
+  file { '/etc/vault.d/initialize.sh':
     ensure => present,
     owner  => 'vault',
     group  => 'vault',
     mode   => '0755',
     source => 'puppet:///modules/profile/vault/initialize.sh',
-    path   => '/etc/vault.d/scripts/initialize.sh',
-  }
-
-  file { 'renew-token-scipt':
-    ensure => present,
-    owner  => 'vault',
-    group  => 'vault',
-    mode   => '0755',
-    source => 'puppet:///modules/profile/vault/renew-token.sh',
-    path   => '/etc/vault.d/scripts/renew-token.sh',
+    path   => '/etc/vault.d/initialize.sh',
   }
 
   file { '/var/log/vault':
@@ -119,7 +104,7 @@ class profile::vault (
     })
   }
 
-  file { 'audit-setting':
+  file { '/etc/vault.d/audit-setting.json':
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
@@ -129,7 +114,7 @@ class profile::vault (
     require => Package['vault'],
   }
 
-  file { 'extra-scripts':
+  file { '/etc/vault.d/extra-scripts.json':
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
