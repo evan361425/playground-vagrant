@@ -6,7 +6,8 @@ profile::vault::storage:
     region: "ap-northeast-1"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
-profile::vault::root_token: "%{lookup('vault_kv_root_token')}"
+profile::vault::extra_scripts:
+  - "kv-secrets/initialize"
 profile::vault::listener:
   tcp:
     address: "0.0.0.0:8200"
@@ -19,13 +20,34 @@ profile::vault::cert_generator::cert_cn: "vault-kv.example.com"
 profile::vault::cert_generator::vault_address: "http://vault-pki-int.example.com:8200"
 profile::vault::cert_generator::vault_token: "%{lookup('vault_pki_int_cert_token')}"
 # KV Secrets
-profile::vault::kv_secrets::mount_setting:
-  type: "kv"
-  path: "develop"
-  options:
-    version: "2"
-profile::vault::kv_secrets::policy_setting:
-  name: "develop-secret-reader-policy"
-  path:
-    "develop/*":
-      "capabilities": ["read"]
+profile::vault::secrets::mount_setting:
+  - path: "develop"
+    type: "kv"
+    options:
+      version: "2"
+  - type: transit
+    path: transit
+profile::vault::secrets::policy_setting:
+  - name: "develop-secret-reader"
+    path:
+      "develop/*":
+        "capabilities": ["read"]
+  - name: transit-client
+    path:
+      "transit/encrypt/aes-key":
+        capabilities: ["update"]
+      "transit/decrypt/aes-key":
+        capabilities: ["update"]
+      "transit/rewrap/aes-key":
+        capabilities: ["update"]
+profile::vault::secrets::client_setting:
+  - name: "develop-secret-reader"
+  - name: "transit-client"
+    # default: ["$name"]
+    # policies: []
+    # default: 72h
+    # ttl:
+# Transit
+profile::vault::transit::keys_setting:
+  - name: "aes-key"
+    type: "aes256-gcm96"

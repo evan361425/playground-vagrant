@@ -6,11 +6,13 @@ profile::vault::storage:
     region: "ap-northeast-1"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
-profile::vault::root_token: "%{lookup('vault_pki_int_root_token')}"
+profile::vault::extra_scripts:
+  - "pki-int/initialize"
 profile::vault::listener:
   tcp:
     address: "0.0.0.0:8200"
     tls_disable: 1
+profile::vault::max_lease_ttl: "8640h"
 # PKI int
 profile::vault::pki_int::mount_setting:
   type: "pki"
@@ -18,15 +20,15 @@ profile::vault::pki_int::mount_setting:
     max_lease_ttl: "8640h"
 profile::vault::pki_int::pki_setting:
   common_name: "Vault Intermediate CA"
-  ttl: "1h"
+  ttl: "8640h"
 profile::vault::pki_int::pki_clients:
   - name: "kv-secrets"
     allowed_domains: "vault-kv.example.com"
     # specify for the allowed domain
     allow_bare_domains: true
-    ttl: "15m"
+    ttl: "768h"
   - name: "kv-client"
     allowed_domains: "vault-client.example.com"
     allow_bare_domains: true
-    ttl: "15m"
+    ttl: "768h"
 profile::vault::pki_int::pki_root_api_addr: "http://vault-pki-root.example.com:8200"

@@ -1,9 +1,11 @@
-# Building root CA by Vault
-class profile::vault::pki_root (
-  Hash             $mount_setting,
-  Hash             $pki_setting,
-  Optional[String] $directory = '/etc/vault.d/pki-root',
+# Vault secret engines
+class profile::vault::secrets (
+  Array[Hash]      $mount_setting,
+  Array[Hash]      $policy_setting,
+  Array[Hash]      $client_setting,
 ) {
+  $directory = '/etc/vault.d/secrets'
+
   file { $directory:
     ensure  => directory,
     owner   => 'vault',
@@ -12,8 +14,9 @@ class profile::vault::pki_root (
   }
 
   $additional_env = {
-    'MOUNT_SETTING' => "${directory}/mount-setting.pem",
-    'PKI_SETTING'   => "${directory}/pki-setting.pem",
+    'MOUNT_SETTING'  => "${directory}/mount-setting.json",
+    'POLICY_SETTING' => "${directory}/policy-setting.json",
+    'CLIENT_SETTING' => "${directory}/client-setting.json",
   }
 
   file { "${directory}/.env":
@@ -32,11 +35,19 @@ class profile::vault::pki_root (
     require => File[$directory],
   }
 
-  file { $additional_env['PKI_SETTING']:
+  file { $additional_env['POLICY_SETTING']:
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => to_json($pki_setting),
+    content => to_json($policy_setting),
+    require => File[$directory],
+  }
+
+  file { $additional_env['CLIENT_SETTING']:
+    ensure  => file,
+    owner   => 'vault',
+    group   => 'vault',
+    content => to_json($client_setting),
     require => File[$directory],
   }
 
@@ -45,18 +56,18 @@ class profile::vault::pki_root (
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/pki-root/initialize.sh',
+    source  => 'puppet:///modules/profile/vault/secrets/initialize.sh',
     path    => "${directory}/initialize.sh",
     require => File[$directory],
   }
 
-  file { "${directory}/generate-token.sh":
+  file { "${directory}/generate-tokens.sh":
     ensure  => present,
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/pki-root/generate-token.sh',
-    path    => "${directory}/generate-token.sh",
+    source  => 'puppet:///modules/profile/vault/secrets/generate-tokens.sh',
+    path    => "${directory}/generate-tokens.sh",
     require => File[$directory],
   }
 }
