@@ -1,5 +1,5 @@
 # Provide root certificate
-class profile::vault_root_cert {
+class profile::vault::root_cert {
   file { '/usr/local/share/ca-certificates/extra':
     ensure  => directory,
   }

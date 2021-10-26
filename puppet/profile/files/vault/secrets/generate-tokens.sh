@@ -2,7 +2,7 @@
 
 # - CLIENT_SETTING
 # shellcheck source=/dev/null
-. "$(dirname "$0")/.env"
+. "/etc/vault.d/secrets/.env"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)

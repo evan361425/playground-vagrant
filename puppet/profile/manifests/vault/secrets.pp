@@ -1,10 +1,11 @@
-# Vault key-value secret engine
-class profile::vault::kv_secrets (
+# Vault secret engines
+class profile::vault::secrets (
   Array[Hash]      $mount_setting,
   Array[Hash]      $policy_setting,
   Array[Hash]      $client_setting,
-  Optional[String] $directory = '/etc/vault.d/kv-secrets',
 ) {
+  $directory = '/etc/vault.d/secrets'
+
   file { $directory:
     ensure  => directory,
     owner   => 'vault',
@@ -22,7 +23,7 @@ class profile::vault::kv_secrets (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => template('profile/vault/cron.env.erb'),
+    content => template('profile/vault/.env.erb'),
     require => File[$directory],
   }
 
@@ -55,7 +56,7 @@ class profile::vault::kv_secrets (
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/kv-secrets/initialize.sh',
+    source  => 'puppet:///modules/profile/vault/secrets/initialize.sh',
     path    => "${directory}/initialize.sh",
     require => File[$directory],
   }
@@ -65,7 +66,7 @@ class profile::vault::kv_secrets (
     owner   => 'vault',
     group   => 'vault',
     mode    => '0755',
-    source  => 'puppet:///modules/profile/vault/kv-secrets/generate-tokens.sh',
+    source  => 'puppet:///modules/profile/vault/secrets/generate-tokens.sh',
     path    => "${directory}/generate-tokens.sh",
     require => File[$directory],
   }

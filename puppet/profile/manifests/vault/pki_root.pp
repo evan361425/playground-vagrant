@@ -20,7 +20,7 @@ class profile::vault::pki_root (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => template('profile/vault/cron.env.erb'),
+    content => template('profile/vault/.env.erb'),
     require => File[$directory],
   }
 

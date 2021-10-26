@@ -3,7 +3,7 @@
 # - MOUNT_SETTING
 # - POLICY_SETTING
 # shellcheck source=/dev/null
-. "$(dirname "$0")/.env"
+. "/etc/vault.d/secrets/.env"
 
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
@@ -14,13 +14,13 @@ CONTENT_TYPE_HEADER="Content-Type: application/json"
 mountKVIfNeed() {
   name=$(echo "$1" | $JQ_BIN -r '.path // "secret"')
 
-  result=$($CURL_BIN -s "$VAULT_ADDR"/v1/sys/mounts \
+  result=$($CURL_BIN -s "$VAULT_ADDR/v1/sys/mounts" \
     -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
     | $JQ_BIN ".data.\"$name/\"")
 
   if [ "$result" = "null" ]; then
-    printf 'Start enable KV secrets "%s"... ' "$name"
-    $CURL_BIN -s -X POST "$VAULT_ADDR"/v1/sys/mounts/"$name" \
+    printf 'Start enable secrets "%s"... ' "$name"
+    $CURL_BIN -s -X POST "$VAULT_ADDR/v1/sys/mounts/$name" \
       -H "$VAULT_TOKEN_HEADER" -H "$CONTENT_TYPE_HEADER" \
       -d "$1" > /dev/null
     echo 'done'

@@ -14,8 +14,8 @@ class profile::vault::pki_int (
   }
 
   $additional_env = {
-    'MOUNT_SETTING'       => "${directory}/mount-setting.pem",
-    'PKI_SETTING'         => "${directory}/pki-setting.pem",
+    'MOUNT_SETTING'       => "${directory}/mount-setting.json",
+    'PKI_SETTING'         => "${directory}/pki-setting.json",
     'CSR_FILE'            => "${directory}/csr.pem",
     'CERT_FILE'           => "${directory}/cert.pem",
     'PKI_CLIENTS_FILE'    => "${directory}/clients.json",
@@ -27,7 +27,7 @@ class profile::vault::pki_int (
     ensure  => file,
     owner   => 'vault',
     group   => 'vault',
-    content => template('profile/vault/cron.env.erb'),
+    content => template('profile/vault/.env.erb'),
     require => File[$directory],
   }
 
