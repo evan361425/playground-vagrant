@@ -23,5 +23,5 @@ spec/fixtures/manifests/
 spec/fixtures/modules/
 tmp/
 vendor/
-root.crt
 vault-agent/token.txt
+vault-agent/certs/*

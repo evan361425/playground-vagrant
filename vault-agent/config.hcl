@@ -12,12 +12,11 @@ vault {
 }
 
 auto_auth {
-  method "aws" {
-    mount_path = "auth/aws-subaccount"
-    config = {
-      type = "iam"
-      role = "foobar"
-    }
+  method "cert" {
+    name = "localhost"
+    ca_cert = "certs/ca.crt"
+    client_cert = "certs/client.crt"
+    client_key = "certs/client.key"
   }
 
   sink "file" {
@@ -34,9 +33,4 @@ cache {
 listener "tcp" {
   address = "localhost:8100"
   tls_disable = true
-}
-
-template {
-  source = "cert.ctmpl"
-  destination = "certs/kv-client.pem"
 }
