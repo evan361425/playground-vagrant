@@ -24,4 +24,5 @@ spec/fixtures/modules/
 tmp/
 vendor/
 vault-agent/token.txt
+vault-agent/pidfile
 vault-agent/certs/*
