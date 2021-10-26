@@ -19,7 +19,7 @@ profile::vault::cert_generator::cert_path: "kv-secrets"
 profile::vault::cert_generator::cert_cn: "vault-kv.example.com"
 profile::vault::cert_generator::vault_address: "http://vault-pki-int.example.com:8200"
 profile::vault::cert_generator::vault_token: "%{lookup('vault_pki_int_cert_token')}"
-# KV Secrets
+# Secrets
 profile::vault::secrets::mount_setting:
   - path: "develop"
     type: "kv"
@@ -51,3 +51,14 @@ profile::vault::secrets::client_setting:
 profile::vault::transit::keys_setting:
   - name: "aes-key"
     type: "aes256-gcm96"
+# Auth
+profile::vault::auth::mount_setting:
+  - path: "cert"
+    type: "cert"
+    extra:
+      certs:
+        - name: "kv-client"
+          certificate_file: "/etc/vault.d/tls/ca.crt"
+          token_policies:
+            - "develop-secret-reader"
+            - "transit-client"

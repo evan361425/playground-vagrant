@@ -14,4 +14,5 @@ node 'vault-kv.example.com' {
   include profile::vault::cert_generator
   include profile::vault::secrets
   include profile::vault::transit
+  include profile::vault::auth
 }
