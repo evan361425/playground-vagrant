@@ -1,6 +1,7 @@
 node 'vault-pki-root.example.com' {
   include profile::vault
   include profile::vault::pki_root
+  include profile::haproxy::consul_template
 }
 
 node 'vault-pki-int.example.com' {

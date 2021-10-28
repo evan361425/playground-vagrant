@@ -1,0 +1,50 @@
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    daemon
+    user                haproxy
+    group               haproxy
+    log                 /dev/log local0 debug
+    log                 /dev/log local1 notice
+    chroot              /var/lib/haproxy
+    tune.ssl.default-dh-param   2048
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                 tcp
+    option               tcplog
+    log                  global
+    option               dontlognull
+    # retries              3
+    timeout connect      5000
+    timeout client       50000
+    timeout server       50000
+
+listen health
+    mode http
+    bind *:8080
+    monitor-uri /health-check
+
+listen stats
+    bind *:8404
+    mode http
+    option httplog
+    option http-use-htx
+    http-request use-service prometheus-exporter if { path /metrics }
+    stats enable
+    stats hide-version
+    stats uri /monitor
+    stats refresh 5s
+
+listen vault
+    bind                 *:8200
+    balance              roundrobin
+    http-check           expect status 200
+    option               httpchk HEAD /v1/sys/health
+    {{- range service "<%= @service_name %>" }}
+    server {{.Node}} {{.Address}}:{{.Port}} check<% if scope.lookupvar('profile::haproxy::consul_template::ssl_check') %> check-ssl verify none<% end %>
+    {{- end }}

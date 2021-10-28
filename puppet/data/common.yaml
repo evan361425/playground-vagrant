@@ -9,3 +9,7 @@ profile::vault::seal:
     kms_key_id: "%{lookup('kms_key_id')}"
     access_key: "%{lookup('access_key')}"
     secret_key: "%{lookup('secret_key')}"
+
+profile::haproxy::http_proxy: ""
+profile::haproxy::https_proxy: ""
+profile::haproxy::consul_template::service_name: "abc"
