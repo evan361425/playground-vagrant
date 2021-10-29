@@ -4,7 +4,6 @@ vault {
   ca_cert = "/vault/certs/ca.crt"
   client_cert = "/vault/certs/client.crt"
   client_key = "/vault/certs/client.key"
-  tls_server_name = "vault-kv.example.com"
   retry {
     num_retries = 2
   }

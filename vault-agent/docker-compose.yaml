@@ -24,7 +24,7 @@ services:
     volumes:
       - consul-data:/consul-template
       - ./cert-generator:/consul-template/config
-    command: sh -c "consul-template -config=/consul-template/config/config.json -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
+    command: sh -c "consul-template -config=/consul-template/config/config.hcl -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
 
 networks:
   default:
