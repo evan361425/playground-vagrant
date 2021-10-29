@@ -1,0 +1,34 @@
+version: "3"
+
+volumes:
+  consul-data:
+  client-data:
+
+services:
+  vault-agent:
+    image: "vault:latest"
+    volumes:
+      - client-data:/vault
+      - ./cert-generator/certs:/vault/certs
+      - ./client:/vault/config
+    ports:
+      - 8100:8100
+    cap_add:
+      - IPC_LOCK
+    command: vault agent -config=/vault/config/config.hcl -address=${VAULT_ADDR}
+    depends_on:
+      - consul-template
+
+  consul-template:
+    image: "hashicorp/consul-template:latest"
+    volumes:
+      - consul-data:/consul-template
+      - ./cert-generator:/consul-template/config
+    command: sh -c "consul-template -config=/consul-template/config/config.json -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.100.0/24

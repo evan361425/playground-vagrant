@@ -16,13 +16,7 @@
   {{- end -}}
   {{- end -}}
 
-  {{- if .Data.certificate -}}
-  {{- .Data.certificate | writeToFile "<%= @source_folder %>/<%= @cert_path %>.crt" "vault" "vault" "0644" -}}
-  {{- .Data.certificate }}
-  {{- end -}}
-
   {{- if .Data.private_key -}}
   {{- .Data.private_key | writeToFile "<%= @source_folder %>/<%= @cert_path %>.key" "vault" "vault" "0644" -}}
-  {{ .Data.private_key }}
   {{- end -}}
 {{- end -}}
