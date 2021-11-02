@@ -19,6 +19,15 @@ services:
     depends_on:
       - consul-template
 
+  redis:
+    image: "redis:latest"
+    volumes:
+      - ./cert-generator/certs/redis:/redis/certs
+      - ./redis:/redis/config
+    command: sh -c "redis-server /redis/config/redis.conf"
+    depends_on:
+      - consul-template
+
   consul-template:
     image: "hashicorp/consul-template:latest"
     volumes:
