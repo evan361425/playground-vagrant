@@ -1,4 +1,4 @@
-{{- with secret "pki/issue/kv-client" "common_name=localhost" -}}
+{{ $path := printf "pki/issue/%s" (env "CLIENT_NAME") }}{{- with secret $path "common_name=localhost" -}}
   {{- if .Data.certificate -}}
   {{- .Data.certificate | writeToFile "/consul-template/config/certs/chain.crt" "consul-template" "consul-template" "0644" "newline" -}}
   {{- .Data.certificate }}

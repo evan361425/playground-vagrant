@@ -20,11 +20,13 @@ services:
       - consul-template
 
   redis:
-    image: "redis:latest"
+    image: "redis:alpine"
     volumes:
       - ./cert-generator/certs/redis:/redis/certs
       - ./redis:/redis/config
-    command: sh -c "redis-server /redis/config/redis.conf"
+    environment:
+      WITH_REDIS: ${WITH_REDIS}
+    command: sh -c "[ \"$WITH_REDIS\" = 'true' ] && redis-server /redis/config/redis.conf || echo 'You have disabling Redis!'"
     depends_on:
       - consul-template
 
@@ -33,7 +35,10 @@ services:
     volumes:
       - consul-data:/consul-template
       - ./cert-generator:/consul-template/config
-    command: sh -c "consul-template -config=/consul-template/config/config.hcl -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
+    environment:
+      CLIENT_NAME: ${CLIENT_NAME}
+      CONFIG_FILE: ${CONFIG_FILE}
+    command: sh -c "consul-template -config=\"/consul-template/config/$CONFIG_FILE.hcl\" -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
 
 networks:
   default:
