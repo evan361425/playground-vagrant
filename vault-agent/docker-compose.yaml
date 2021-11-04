@@ -7,6 +7,9 @@ volumes:
 services:
   vault-agent:
     image: "vault:latest"
+    build:
+      context: .
+      dockerfile: agent.Dockerfile
     volumes:
       - client-data:/vault
       - ./cert-generator/certs:/vault/certs
@@ -15,7 +18,8 @@ services:
       - 8100:8100
     cap_add:
       - IPC_LOCK
-    command: vault agent -config=/vault/config/config.hcl -address=${VAULT_ADDR}
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
     depends_on:
       - consul-template
 
@@ -31,14 +35,16 @@ services:
       - consul-template
 
   consul-template:
-    image: "hashicorp/consul-template:latest"
+    build:
+      context: .
+      dockerfile: cert-generator.Dockerfile
     volumes:
       - consul-data:/consul-template
       - ./cert-generator:/consul-template/config
     environment:
       CLIENT_NAME: ${CLIENT_NAME}
-      CONFIG_FILE: ${CONFIG_FILE}
-    command: sh -c "consul-template -config=\"/consul-template/config/$CONFIG_FILE.hcl\" -vault-addr=${PKI_INT_VAULT_ADDR} -vault-token=${PKI_INT_VAULT_TOKEN}"
+      PKI_INT_VAULT_ADDR: ${PKI_INT_VAULT_ADDR}
+      PKI_INT_VAULT_TOKEN: ${PKI_INT_VAULT_TOKEN}
 
 networks:
   default:

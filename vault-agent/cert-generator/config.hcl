@@ -19,3 +19,11 @@
 
   "backup" = false
 }
+
+"template" = {
+  "source" = "/consul-template/config/templates/redis.ctmpl"
+
+  "destination" = "/consul-template/config/certs/redis/client.crt"
+
+  "backup" = false
+}

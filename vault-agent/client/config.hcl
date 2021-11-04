@@ -1,4 +1,5 @@
 pid_file = "/vault/config/pid"
+exit_after_auth = false
 
 vault {
   ca_cert = "/vault/certs/ca.crt"
@@ -29,6 +30,6 @@ cache {
 }
 
 listener "tcp" {
-  address = "localhost:8100"
+  address = "0.0.0.0:8100"
   tls_disable = true
 }
