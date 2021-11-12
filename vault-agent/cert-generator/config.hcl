@@ -15,15 +15,7 @@
 "template" = {
   "source" = "/consul-template/config/templates/cert.ctmpl"
 
-  "destination" = "/consul-template/config/certs/client.crt"
-
-  "backup" = false
-}
-
-"template" = {
-  "source" = "/consul-template/config/templates/redis.ctmpl"
-
-  "destination" = "/consul-template/config/certs/redis/client.crt"
+  "destination" = "/consul-template/config/certs/ca.crt"
 
   "backup" = false
 }

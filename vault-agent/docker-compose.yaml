@@ -1,17 +1,9 @@
 version: "3"
 
-volumes:
-  consul-data:
-  client-data:
-
 services:
   vault-agent:
     image: "vault:latest"
-    build:
-      context: .
-      dockerfile: agent.Dockerfile
     volumes:
-      - client-data:/vault
       - ./cert-generator/certs:/vault/certs
       - ./client:/vault/config
     ports:
@@ -20,17 +12,7 @@ services:
       - IPC_LOCK
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
-    depends_on:
-      - consul-template
-
-  redis:
-    image: "redis:alpine"
-    volumes:
-      - ./cert-generator/certs/redis:/redis/certs
-      - ./redis:/redis/config
-    environment:
-      WITH_REDIS: ${WITH_REDIS}
-    command: sh -c "[ \"$WITH_REDIS\" = 'true' ] && redis-server /redis/config/redis.conf || echo 'You have disabling Redis!'"
+    command: sh -c "vault agent -config=/vault/config/config.hcl -address=$VAULT_ADDR"
     depends_on:
       - consul-template
 
@@ -39,7 +21,6 @@ services:
       context: .
       dockerfile: cert-generator.Dockerfile
     volumes:
-      - consul-data:/consul-template
       - ./cert-generator:/consul-template/config
     environment:
       CLIENT_NAME: ${CLIENT_NAME}

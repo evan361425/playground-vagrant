@@ -1,26 +1,27 @@
-pid_file = "/vault/config/pid"
+pid_file = "client/pid"
 exit_after_auth = false
 
 vault {
-  ca_cert = "/vault/certs/ca.crt"
-  client_cert = "/vault/certs/client.crt"
-  client_key = "/vault/certs/client.key"
+  ca_cert = "cert-generator/certs/ca.crt"
+  client_cert = "cert-generator/certs/client.crt"
+  client_key = "cert-generator/certs/client.key"
+  tls_min_version = "tls13"
   retry {
-    num_retries = 2
+    num_retries = 0
   }
 }
 
 auto_auth {
   method "cert" {
     name = "localhost"
-    ca_cert = "/vault/certs/ca.crt"
-    client_cert = "/vault/certs/client.crt"
-    client_key = "/vault/certs/client.key"
+    ca_cert = "cert-generator/certs/ca.crt"
+    client_cert = "cert-generator/certs/client.crt"
+    client_key = "cert-generator/certs/client.key"
   }
 
   sink "file" {
-    config = {
-      path = "/vault/config/token.txt"
+    config {
+      path = "client/token.txt"
     }
   }
 }
@@ -30,6 +31,6 @@ cache {
 }
 
 listener "tcp" {
-  address = "0.0.0.0:8100"
+  address = "localhost:8100"
   tls_disable = true
 }

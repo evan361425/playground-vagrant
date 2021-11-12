@@ -1,22 +1,27 @@
 {{ $path := printf "pki/issue/%s" (env "CLIENT_NAME") }}{{- with secret $path "common_name=localhost" -}}
   {{- if .Data.certificate -}}
-  {{- .Data.certificate | writeToFile "/consul-template/config/certs/chain.crt" "consul-template" "consul-template" "0644" "newline" -}}
-  {{- .Data.certificate }}
+  {{- .Data.certificate | writeToFile "/consul-template/config/certs/client.crt" "consul-template" "consul-template" "0644" -}}
   {{- end -}}
   
   {{- if .Data.ca_chain -}}
   {{- range $key, $value := .Data.ca_chain -}}
-    {{- $value | writeToFile "/consul-template/config/certs/chain.crt" "consul-template" "consul-template" "0644" "append" -}}
-
-    {{- if eq $key 0 -}}
-      {{- $value | writeToFile "/consul-template/config/certs/ca.crt" "consul-template" "consul-template" "0644" "newline" -}}
-    {{- else -}}
-      {{- $value | writeToFile "/consul-template/config/certs/ca.crt" "consul-template" "consul-template" "0644" "append" -}}
-    {{- end -}}
+      {{- $value -}}
   {{- end -}}
   {{- end -}}
 
   {{- if .Data.private_key -}}
   {{- .Data.private_key | writeToFile "/consul-template/config/certs/client.key" "consul-template" "consul-template" "0644" -}}
   {{- end -}}
-{{- end -}}
+{{- end }}
+-----BEGIN CERTIFICATE-----
+MIIB0jCCAVigAwIBAgIUOWNDoiaO8IA+cvFvH466JfVY8XswCgYIKoZIzj0EAwIw
+GDEWMBQGA1UEAxMNVmF1bHQgUm9vdCBDQTAeFw0yMTExMDIwMjQ1MzdaFw0zMTA5
+MTEwMjQ2MDdaMBgxFjAUBgNVBAMTDVZhdWx0IFJvb3QgQ0EwdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAASrYrNGpDTUUaoZPJ4M4JpWo9ouMq+q47RwgujNE0WaPF7P6r2q
+4+T9bYcU7rnkikNoeDZyhrKHkFL2UQp9ZtmviMq72LZFbJKHViiFRuu9n7yr8e6h
+A75XdqmhQ7b2xEijYzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/
+MB0GA1UdDgQWBBQM5k92SsHLLp8Q1T2BPf5rqAXzAjAfBgNVHSMEGDAWgBQM5k92
+SsHLLp8Q1T2BPf5rqAXzAjAKBggqhkjOPQQDAgNoADBlAjEAzzM2mbZYteoY6+D0
+vyG1xVfYe01OOG4BIiuCJHBNTOSzVUIQcF0Vd88TtauWDRz+AjBxjc4yUidYfCb7
+i304mtbzaKChP4vfjhspUu8ByI5s/N2SyshdHMXGAmQ9KwUE9lY=
+-----END CERTIFICATE-----
