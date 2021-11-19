@@ -4,28 +4,32 @@ services:
   vault-agent:
     image: "vault:latest"
     volumes:
-      - ./cert-generator/certs:/vault/certs
-      - ./client:/vault/config
+      - ./certs:/certs
+      - ./vault-agent:/vault-agent
+      - ./certs/root.crt:/usr/local/share/ca-certificates/root.crt
     ports:
       - 8100:8100
     cap_add:
       - IPC_LOCK
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
-    command: sh -c "vault agent -config=/vault/config/config.hcl -address=$VAULT_ADDR"
+    command: sh -c "update-ca-certificates && vault agent -config=/vault-agent/config.hcl -address=$VAULT_ADDR"
     depends_on:
       - consul-template
 
   consul-template:
-    build:
-      context: .
-      dockerfile: cert-generator.Dockerfile
+    image: "hashicorp/consul-template:latest"
+    user: root
     volumes:
-      - ./cert-generator:/consul-template/config
+      - ./cert-generator/config.hcl:/consul-template/config.hcl
+      - ./cert-generator/templates:/consul-template/templates
+      - ./certs:/consul-template/certs
+      - ./certs/root.crt:/usr/local/share/ca-certificates/root.crt
     environment:
       CLIENT_NAME: ${CLIENT_NAME}
       PKI_INT_VAULT_ADDR: ${PKI_INT_VAULT_ADDR}
       PKI_INT_VAULT_TOKEN: ${PKI_INT_VAULT_TOKEN}
+    command: sh -c "update-ca-certificates && consul-template -config=/consul-template/config.hcl -vault-addr=$PKI_INT_VAULT_ADDR -vault-token=$PKI_INT_VAULT_TOKEN"
 
 networks:
   default:

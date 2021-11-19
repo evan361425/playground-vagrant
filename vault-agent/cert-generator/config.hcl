@@ -13,9 +13,9 @@
 }
 
 "template" = {
-  "source" = "/consul-template/config/templates/cert.ctmpl"
+  "source" = "/consul-template/templates/cert.ctmpl"
 
-  "destination" = "/consul-template/config/certs/ca.crt"
+  "destination" = "/consul-template/certs/ca.crt"
 
   "backup" = false
 }

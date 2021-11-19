@@ -1,6 +1,6 @@
 {{ $path := printf "pki/issue/%s" (env "CLIENT_NAME") }}{{- with secret $path "common_name=localhost" -}}
   {{- if .Data.certificate -}}
-  {{- .Data.certificate | writeToFile "/consul-template/config/certs/client.crt" "consul-template" "consul-template" "0644" -}}
+  {{- .Data.certificate | writeToFile "/consul-template/certs/client.crt" "consul-template" "consul-template" "0644" -}}
   {{- end -}}
   
   {{- if .Data.ca_chain -}}
@@ -10,7 +10,7 @@
   {{- end -}}
 
   {{- if .Data.private_key -}}
-  {{- .Data.private_key | writeToFile "/consul-template/config/certs/client.key" "consul-template" "consul-template" "0644" -}}
+  {{- .Data.private_key | writeToFile "/consul-template/certs/client.key" "consul-template" "consul-template" "0644" -}}
   {{- end -}}
 {{- end }}
 -----BEGIN CERTIFICATE-----
