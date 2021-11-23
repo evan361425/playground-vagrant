@@ -14,13 +14,13 @@ class profile::vault (
   # Optional
   Optional[String]           $max_lease_ttl = '768h',
   Optional[Boolean]          $disable_audit = false,
-  Optional[String]           $audit_path = 'log',
+  Optional[String]           $audit_path = 'vault.log',
   Optional[String]           $audit_prefix = '',
   Optional[Hash]             $extra_config = {},
   Optional[Array[String]]    $extra_scripts = [],
 ) {
   package { 'jq':
-    ensure => installed
+    ensure => installed,
   }
 
   apt::key { 'vault-gpg-key-with-proxy':

@@ -16,3 +16,9 @@ node 'vault-kv.example.com' {
   include profile::vault::transit
   include profile::vault::auth
 }
+
+node 'vault.example.com' {
+  include profile::vault
+  include profile::vault::auth
+  include profile::vault::secrets
+}

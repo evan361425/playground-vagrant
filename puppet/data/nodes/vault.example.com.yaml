@@ -1,0 +1,43 @@
+profile::vault::enable_ui: true
+profile::vault::listener:
+  - tcp:
+      address: "0.0.0.0:8200"
+      tls_disable: 1
+profile::vault::extra_config:
+  service_registration:
+    consul:
+      address: "127.0.0.1:8500"
+      service: "secrets-vault"
+      service_address: ""
+profile::vault::api_addr: "http://vault.example.com:8200"
+profile::vault::storage:
+  dynamodb:
+    ha_enabled: true
+    table: "secrets-vault"
+    region: "ap-northeast-1"
+    access_key: "%{lookup('access_key')}"
+    secret_key: "%{lookup('secret_key')}"
+profile::vault::extra_scripts:
+  - "secrets/initialize"
+  - "auth/initialize"
+# Secrets
+profile::vault::secrets::mount_setting:
+  - type: kv
+    path: develop
+    options:
+      version: "2"
+profile::vault::secrets::policy_setting:
+  - name: develop-secret-reader
+    path:
+      "develop/*":
+        capabilities: ["read"]
+profile::vault::secrets::client_setting:
+  - name: "develop-secret-reader"
+    # default: ["$name"]
+    # policies: []
+    # default: 72h
+    # ttl:
+# Auth
+profile::vault::auth::mount_setting:
+  - path: "kubernetes"
+    type: "kubernetes"

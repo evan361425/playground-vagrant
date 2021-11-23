@@ -28,16 +28,21 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "vault-pki-root" do |root|
         root.vm.hostname = "vault-pki-root.example.com"
-        root.vm.network "private_network", ip: "192.168.1.11"
+        root.vm.network "private_network", ip: "192.168.56.11"
     end
 
     config.vm.define "vault-pki-int" do |interm|
         interm.vm.hostname = "vault-pki-int.example.com"
-        interm.vm.network "private_network", ip: "192.168.1.12"
+        interm.vm.network "private_network", ip: "192.168.56.12"
     end
 
     config.vm.define "vault-kv" do |kv|
         kv.vm.hostname = "vault-kv.example.com"
-        kv.vm.network "private_network", ip: "192.168.1.13"
+        kv.vm.network "private_network", ip: "192.168.56.13"
+    end
+
+    config.vm.define "vault" do |kv|
+        kv.vm.hostname = "vault.example.com"
+        kv.vm.network "private_network", ip: "192.168.56.14"
     end
 end
